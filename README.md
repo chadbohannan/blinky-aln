@@ -1,2 +1,4 @@
 # blinky-aln
-Multi-platform mesh network 
+Multi-platform mesh networked blinky LED controller
+
+
