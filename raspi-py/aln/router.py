@@ -95,6 +95,7 @@ class Router(Thread):
                     time.sleep(0.1)
                     self.share_net_state()
                 else: # remove route
+                    print("removing route to", remoteAddress)
                     del self.remoteNodeMap[remoteAddress]
                     for loadMap in self.serviceLoadMap.values():
                         del loadMap[address]
