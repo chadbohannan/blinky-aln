@@ -36,7 +36,7 @@
         android:layout_marginRight="10dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" >
+        app:layout_constraintEnd_toEndOf="parent">
 
         <Switch
             android:id="@+id/listen_switch"
@@ -52,7 +52,8 @@
             android:textSize="8pt"
             android:switchMinWidth="76dp"
             android:layout_marginTop="10dp"
-            android:text="Broadcast" />
+            android:text="Broadcast"
+            android:enabled="false"/>
     </androidx.appcompat.widget.LinearLayoutCompat>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

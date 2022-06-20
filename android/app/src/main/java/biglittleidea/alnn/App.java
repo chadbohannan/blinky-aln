@@ -18,6 +18,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import biglittleidea.aln.IChannel;
+import biglittleidea.aln.Router;
+import biglittleidea.aln.TcpChannel;
+import biglittleidea.aln.Packet;
+
 public class App extends Application {
     private static App instance;
 
@@ -53,14 +58,26 @@ public class App extends Application {
                     isWifiConnected.setValue(isConnected);
                     if (isConnected) {
                         final Handler handler = new Handler(Looper.getMainLooper());
-                        handler.postDelayed(() -> updateWifi(), 5000);
+                        handler.postDelayed(() -> updateWifi(), 5000); // wait a long time before sync'ing UI
                     } else {
                         msg.setValue("wifi disconnected");
                     }
                 }
             }
         }, intentFilter);
+    }
 
+    BeaconInfo beaconInfoFromUri(String uri) {
+        String[] parts = uri.split("://");
+        String protocol = parts[0];
+        parts = parts[1].split(":");
+        String host = parts[0];
+        parts = parts[1].split("/");
+        short port = Short.parseShort(parts[0]);
+        String path = "";
+        if (parts.length > 0)
+            path = parts[1];
+        return new BeaconInfo(protocol, host, port, path);
     }
 
     UDPListener makeListener(InetAddress bcastAddress, short port) {
@@ -69,13 +86,11 @@ public class App extends Application {
             @Override
             public void onMessage(byte[] message) {
                 String uri = new String(message);
-                String[] parts = uri.split("://");
-                String protocol = parts[0];
-                parts = parts[1].split(":");
-                String host = parts[0];
-                short port = Short.parseShort(parts[1]);
-
-                BeaconInfo info = new BeaconInfo(protocol, host, port);
+                BeaconInfo info = beaconInfoFromUri(uri);
+                if (info == null) {
+                    Log.d("ALNN", "failed to parse bcast msg:" + uri);
+                    return;
+                }
                 List<BeaconInfo> infos = beaconInfo.getValue();
                 if (infos == null) {
                     infos = new ArrayList<BeaconInfo>();
@@ -86,7 +101,7 @@ public class App extends Application {
                 }
                 infos.add(info);
                 beaconInfo.postValue(infos);
-                Log.d("ALNN", uri.toString());
+                Log.d("ALNN", uri);
             }
         });
         return listener;
@@ -126,14 +141,44 @@ public class App extends Application {
         }
     }
 
-    boolean checked = false;
-    public void connectTo(String protocol, String host, short port, boolean enable) {
-        // TODO
-        checked = enable;
+
+    HashMap<String, IChannel> channelMap = new HashMap<>();
+    //Router alnRouter = new Router("f7824110-9e69-4830-b6d3-70e8e92449e9"); // TODO generate and persist locally
+    Router alnRouter = new Router("android-client-1"); // TODO generate and persist locally
+    public String connectTo(BeaconInfo info, boolean enable) {
+        synchronized (channelMap) {
+            String path = String.format("%s:%d", info.host, info.port);
+            if (enable && !channelMap.containsKey(path)) {
+                TcpChannel channel;
+                switch (info.protocol) {
+                case "tcp+aln":
+                    channel = new TcpChannel(info.host, info.port);
+                    break;
+                case "tcp+maln":
+                    channel = new TcpChannel(info.host, info.port);
+                    Packet p = new Packet();
+                    p.DestAddress = info.path;
+                    channel.send(p);
+                    break;
+                default:
+                    return "protocol not supported";
+                }
+                alnRouter.addChannel(channel);
+                channelMap.put(path, channel);
+            } else if (!enable && channelMap.containsKey(path)) {
+                channelMap.get(path).close();
+                channelMap.remove(path);
+            }
+        }
+
         localInetInfo.setValue(localInetInfo.getValue()); // trigger observers
+        return null;
     }
 
     public boolean isConnected(String protocol, String host, short port) {
-        return checked;
+        String path = String.format("%s:%d", host, port);
+        synchronized (channelMap) {
+            return channelMap.containsKey(path);
+        }
     }
 }

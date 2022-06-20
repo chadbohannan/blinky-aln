@@ -1,5 +1,6 @@
 package biglittleidea.alnn.ui.wifi;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -50,14 +51,21 @@ public class BeaconInfoListAdapter extends BaseAdapter {
         protocolText.setText(info.protocol);
 
         TextView addressText = (TextView) view.findViewById(R.id.addressTextView);
-        addressText.setText(String.format("%s:%d", info.host, info.port ));
+        if (info.path.length() > 0){
+            addressText.setText(String.format("%s:%d\n%s", info.host, info.port, info.path));
+        } else {
+            addressText.setText(String.format("%s:%d", info.host, info.port));
+        }
 
         Switch toggle = (Switch) view.findViewById(R.id.connect_switch);
         toggle.setChecked(app.isConnected(info.protocol, info.host, info.port));
         toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                app.connectTo(info.protocol, info.host, info.port, isChecked);
+                String err = app.connectTo(info, isChecked);
+                if (err != null) {
+                    Log.d("ALNN", "on connect err:" + err);
+                }
             }
         });
 

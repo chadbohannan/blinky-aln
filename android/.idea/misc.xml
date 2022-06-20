@@ -14,6 +14,7 @@
         <entry key="app/src/main/res/layout/fragment_notifications.xml" value="0.2536231884057971" />
         <entry key="app/src/main/res/layout/fragment_wifi.xml" value="0.2203125" />
         <entry key="app/src/main/res/layout/list_header.xml" value="0.21927083333333333" />
+        <entry key="app/src/main/res/layout/wifi_bcast_item.xml" value="0.271286231884058" />
         <entry key="app/src/main/res/layout/wifi_beacon_item.xml" value="0.35520833333333335" />
         <entry key="app/src/main/res/layout/wifi_list_adapter.xml" value="0.21927083333333333" />
         <entry key="app/src/main/res/menu/bottom_nav_menu.xml" value="0.21979166666666666" />
