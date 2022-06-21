@@ -57,4 +57,17 @@ public class NetUtil {
         }
         return null;
     }
+
+    public static BeaconInfo beaconInfoFromUri(String uri) {
+        String[] parts = uri.split("://");
+        String protocol = parts[0];
+        parts = parts[1].split(":");
+        String host = parts[0];
+        parts = parts[1].split("/");
+        short port = Short.parseShort(parts[0]);
+        String path = "";
+        if (parts.length > 0)
+            path = parts[1];
+        return new BeaconInfo(protocol, host, port, path);
+    }
 }

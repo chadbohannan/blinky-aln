@@ -4,29 +4,45 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.ListView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
 
+import java.util.Map;
+
+import biglittleidea.aln.Router;
+import biglittleidea.alnn.App;
+import biglittleidea.alnn.SeparatedListAdapter;
 import biglittleidea.alnn.databinding.FragmentMeshBinding;
+import biglittleidea.alnn.databinding.FragmentWifiBinding;
 
 public class MeshFragment extends Fragment {
 
     private FragmentMeshBinding binding;
+    Map<String, Router.NodeInfoItem> nodeInfo;
+
+
+    void resetAdapters(ListView listView) {
+        App app = App.getInstance();
+        SeparatedListAdapter listAdapter = new SeparatedListAdapter(app);
+        for(String address : nodeInfo.keySet()) {
+            listAdapter.addSection(address, new NodeServiceListAdapter(app, nodeInfo.get(address).services));
+        }
+        listView.setAdapter(listAdapter);
+    }
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        MeshViewModel meshViewModel =
-                new ViewModelProvider(this).get(MeshViewModel.class);
-
+        App app = App.getInstance();
         binding = FragmentMeshBinding.inflate(inflater, container, false);
-        View root = binding.getRoot();
+        final ListView listView = binding.listView;
 
-        final TextView textView = binding.textMeshTodo;
-        meshViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
-        return root;
+        app.nodeInfo.observe(getViewLifecycleOwner(), nodeInfos -> {
+            nodeInfo = nodeInfos;
+            resetAdapters(listView);
+        });
+        return binding.getRoot();
     }
 
     @Override

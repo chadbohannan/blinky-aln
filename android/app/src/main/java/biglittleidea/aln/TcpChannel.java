@@ -15,6 +15,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import biglittleidea.alnn.App;
+
 public class TcpChannel implements IChannel {
     SocketChannel socket;
     BlockingQueue<Packet> sendQueue = new LinkedBlockingQueue<Packet>(10);
@@ -92,6 +94,8 @@ public class TcpChannel implements IChannel {
                             break;
                         }
                     }
+                    if (closeHandler != null)
+                        closeHandler.onChannelClosed(TcpChannel.this);
                 }
             });
             t.start();

@@ -58,14 +58,19 @@ def main():
         lock.release() # release the main thread
     signal.signal(signal.SIGINT, signal_handler)
 
-    def on_pong(packet):
-        print('received:', str(bytes(packet.data)))
-        # no more packets expected for this context
-        router.release_context(packet.contextID)         
+    # def on_pong(packet):
+    #     print('received:', str(bytes(packet.data)))
+    #     # no more packets expected for this context
+    #     router.release_context(packet.contextID)         
 
-    ctxID = router.register_context_handler(on_pong)
-    msg = router.send(Packet(service="ping", contextID=ctxID))
-    if msg: print("on send:", msg)
+    # ctxID = router.register_context_handler(on_pong)
+    # msg = router.send(Packet(service="name", contextID=ctxID))
+    # if msg: print("on send:", msg)
+
+    def on_led_control(packet):
+        print(packet.data.decode('utf-8'))
+
+    router.register_service("8x8_led_control", on_led_control)
 
     # hang until ^C
     lock.acquire() # take the lock

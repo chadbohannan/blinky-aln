@@ -3,13 +3,20 @@ package biglittleidea.aln;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Router {
 
-    interface OnStateChangedListener{
+    public interface OnStateChangedListener{
         void onStateChanged();
     }
 
@@ -383,16 +390,21 @@ public class Router {
         synchronized (this) {
             channels.remove(ch);
             // bcast the loss of routes through the channel
+            List<String> addresses = new ArrayList<>();
             for (String address : remoteNodeMap.keySet()) {
                 RemoteNodeInfo nodeInfo = remoteNodeMap.get(address);
                 if (nodeInfo.channel == ch) {
-                    removeAddress(address);
-                    for (IChannel c : channels) {
-                        c.send(composeNetRouteShare(address, (short) 0));
-                    }
+                    addresses.add(address);
+                }
+            }
+            for (String address : addresses) {
+                removeAddress(address);
+                for (IChannel c : channels) {
+                    c.send(composeNetRouteShare(address, (short) 0));
                 }
             }
         }
+
     }
 
     protected void removeAddress(String address) {
@@ -417,8 +429,49 @@ public class Router {
     }
 
 
+    public class ServiceListItem implements java.lang.Comparable{
+        public String service;
+        public short load;
+        public ServiceListItem(String service, short load) {
+            this.service = service;
+            this.load = load;
+        }
 
-    public availableServices()
+        @Override
+        public int compareTo(Object o) {
+            return service.compareTo(((ServiceListItem)o).service);
+        }
+    }
+
+    public class NodeInfoItem {
+        public String address;
+        public int distance;
+        public Set<ServiceListItem> services = new TreeSet<>();
+    }
+
+    public Map<String, NodeInfoItem> availableServices() {
+        TreeMap<String, NodeInfoItem> addressMap = new TreeMap<>();
+        synchronized (this) {
+            for (String address : remoteNodeMap.keySet()) {
+                RemoteNodeInfo info = remoteNodeMap.get(address);
+                NodeInfoItem item = new NodeInfoItem();
+                item.address = address;
+                item.distance = info.cost;
+                addressMap.put(address, item);
+            }
+
+            for (String service : serviceLoadMap.keySet()) {
+                HashMap<String, NodeLoad> addressLoadMap = serviceLoadMap.get(service);
+                for (String address : addressLoadMap.keySet()) {
+                    if (addressLoadMap.containsKey(address)) {
+                        NodeLoad nodeLoad = addressLoadMap.get(address);
+                        addressMap.get(address).services.add(new ServiceListItem(service, nodeLoad.Load));
+                    }
+                }
+            }
+        }
+        return addressMap;
+    }
 
     public Packet[] exportRouteTable() {
         Packet[] routes = new Packet[remoteNodeMap.size() + 1];

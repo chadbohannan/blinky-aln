@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
@@ -17,6 +16,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import biglittleidea.aln.IChannel;
 import biglittleidea.aln.Router;
@@ -30,6 +30,10 @@ public class App extends Application {
     public final MutableLiveData<String> msg = new MutableLiveData<>();
     public final MutableLiveData<List<LocalInetInfo>> localInetInfo = new MutableLiveData<>();
     public final MutableLiveData<List<BeaconInfo>> beaconInfo = new MutableLiveData<>();
+    public final MutableLiveData<Map<String, Router.NodeInfoItem>> nodeInfo = new MutableLiveData<>();
+
+    HashMap<String, IChannel> channelMap = new HashMap<>();
+    Router alnRouter = new Router("android-client-1"); // TODO generate and persist locally
 
     public static App getInstance() {
         return instance;
@@ -65,19 +69,13 @@ public class App extends Application {
                 }
             }
         }, intentFilter);
-    }
 
-    BeaconInfo beaconInfoFromUri(String uri) {
-        String[] parts = uri.split("://");
-        String protocol = parts[0];
-        parts = parts[1].split(":");
-        String host = parts[0];
-        parts = parts[1].split("/");
-        short port = Short.parseShort(parts[0]);
-        String path = "";
-        if (parts.length > 0)
-            path = parts[1];
-        return new BeaconInfo(protocol, host, port, path);
+        alnRouter.setOnStateChangedListener(new Router.OnStateChangedListener() {
+            @Override
+            public void onStateChanged() {
+                nodeInfo.postValue(alnRouter.availableServices());
+            }
+        });
     }
 
     UDPListener makeListener(InetAddress bcastAddress, short port) {
@@ -86,7 +84,7 @@ public class App extends Application {
             @Override
             public void onMessage(byte[] message) {
                 String uri = new String(message);
-                BeaconInfo info = beaconInfoFromUri(uri);
+                BeaconInfo info = NetUtil.beaconInfoFromUri(uri);
                 if (info == null) {
                     Log.d("ALNN", "failed to parse bcast msg:" + uri);
                     return;
@@ -141,10 +139,6 @@ public class App extends Application {
         }
     }
 
-
-    HashMap<String, IChannel> channelMap = new HashMap<>();
-    //Router alnRouter = new Router("f7824110-9e69-4830-b6d3-70e8e92449e9"); // TODO generate and persist locally
-    Router alnRouter = new Router("android-client-1"); // TODO generate and persist locally
     public String connectTo(BeaconInfo info, boolean enable) {
         synchronized (channelMap) {
             String path = String.format("%s:%d", info.host, info.port);

@@ -17,7 +17,6 @@ def makeNetworkRouteSharePacket(srcAddr, destAddr, cost):
     data.extend(byteLen(destAddr))
     data.extend(bytes(destAddr, "utf-8"))
     data.extend(writeINT16U(cost))
-    # data = byteLen(destAddr) + bytes(destAddr, "utf-8") + writeINT16U(cost)
     return Packet(netState=Packet.NET_ROUTE, srcAddr=srcAddr,data=data)
 
 def parseNetworkRouteSharePacket(packet): # returns dest, next-hop, cost, err
