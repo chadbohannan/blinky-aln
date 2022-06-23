@@ -15,21 +15,18 @@ import biglittleidea.aln.Router;
 import biglittleidea.alnn.App;
 import biglittleidea.alnn.SeparatedListAdapter;
 import biglittleidea.alnn.databinding.FragmentMeshBinding;
-import biglittleidea.alnn.databinding.FragmentWifiBinding;
 
 public class MeshFragment extends Fragment {
-
     private FragmentMeshBinding binding;
     Map<String, Router.NodeInfoItem> nodeInfo;
-
 
     void resetAdapters(ListView listView) {
         App app = App.getInstance();
         SeparatedListAdapter listAdapter = new SeparatedListAdapter(app);
         for(String address : nodeInfo.keySet()) {
-            listAdapter.addSection(address, new NodeServiceListAdapter(app, nodeInfo.get(address).services));
+            listAdapter.addSection(address, new NodeListAdapter(getActivity(), nodeInfo));
         }
-        listView.setAdapter(listAdapter);
+        listView.setAdapter(new NodeListAdapter(getActivity(), nodeInfo));
     }
 
     public View onCreateView(@NonNull LayoutInflater inflater,
