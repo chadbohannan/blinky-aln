@@ -1,6 +1,7 @@
 package biglittleidea.alnn.ui.mesh;
 
 import android.app.Activity;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,8 +26,10 @@ public class NodeServiceListAdapter extends BaseAdapter {
     LayoutInflater inflter;
     List<Router.ServiceListItem> list = new ArrayList<>();
     Activity activity;
-    public NodeServiceListAdapter(Activity activity, Set<Router.ServiceListItem> services) {
+    String address;
+    public NodeServiceListAdapter(Activity activity, String address, Set<Router.ServiceListItem> services) {
         this.activity = activity;
+        this.address = address;
         for (Router.ServiceListItem item : services)
             this.list.add(item);
         inflter = (LayoutInflater.from(activity));
@@ -54,9 +57,25 @@ public class NodeServiceListAdapter extends BaseAdapter {
         TextView text = view.findViewById(R.id.service_name_view);
         text.setText(info.service);
 
-        String[] actions = new String[]{"heart", "square", "circle", "happy-face"};
+        NodeActionItem[] nodeActions;
+        Set<String> actions = App.getInstance().getActionsForService(info.service);
+        if (actions != null) {
+            nodeActions = new NodeActionItem[actions.size()];
+            Object[] strings = actions.toArray();
+            for (int i = 0; i < nodeActions.length; i++) {
+                String[] parts = ((String) strings[i]).split(("\t"));
+                if (parts.length == 2) {
+                    nodeActions[i] = new NodeActionItem(address, info.service, parts[1], parts[0]);
+                } else {
+                    nodeActions[i] = new NodeActionItem(address, info.service, parts[0], parts[0]);
+                }
+            }
+        } else {
+            nodeActions = new NodeActionItem[0];
+        }
+
         RecyclerView rv = view.findViewById(R.id.packet_action_list);
-        rv.setAdapter(new PacketButtonListAdapter(activity, actions));
+        rv.setAdapter(new PacketButtonListAdapter(activity, info.service, nodeActions));
         rv.setLayoutManager(new LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false));
         return view;
     }

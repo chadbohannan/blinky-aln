@@ -50,7 +50,7 @@ public class NodeListAdapter extends BaseAdapter {
         TextView text = view.findViewById(R.id.titleText);
         text.setText(info.address);
         ListView listView = view.findViewById(R.id.serviceListView);
-        listView.setAdapter(new NodeServiceListAdapter(activity, info.services));
+        listView.setAdapter(new NodeServiceListAdapter(activity, info.address, info.services));
         return view;
     }
 }

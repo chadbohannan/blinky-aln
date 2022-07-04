@@ -1,7 +1,5 @@
 package biglittleidea.alnn;
 
-import java.net.InetAddress;
-
 public class BeaconInfo {
     public String protocol;
     public String host;

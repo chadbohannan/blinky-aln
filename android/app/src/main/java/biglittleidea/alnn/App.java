@@ -5,9 +5,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import androidx.lifecycle.MutableLiveData;
@@ -17,6 +19,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
 
 import biglittleidea.aln.IChannel;
 import biglittleidea.aln.Router;
@@ -27,16 +33,31 @@ public class App extends Application {
     private static App instance;
 
     private final MutableLiveData<Boolean> isWifiConnected = new MutableLiveData<>();
-    public final MutableLiveData<String> msg = new MutableLiveData<>();
     public final MutableLiveData<List<LocalInetInfo>> localInetInfo = new MutableLiveData<>();
     public final MutableLiveData<List<BeaconInfo>> beaconInfo = new MutableLiveData<>();
     public final MutableLiveData<Map<String, Router.NodeInfoItem>> nodeInfo = new MutableLiveData<>();
+    public final MutableLiveData<Set<String>> directConnections = new MutableLiveData<>();
+    public final MutableLiveData<Integer> numActiveConnections = new MutableLiveData<>();
+//    public String qrDialogLabel = "";
+//    public String qrScanResult = "";
+
+    public final MutableLiveData<String> qrDialogLabel = new MutableLiveData<>();
+    public final MutableLiveData<String> qrScanResult = new MutableLiveData<>();
+
+    Set<String> services;
+    TreeMap<String, Set<String>> actions = new TreeMap<>();
+    TreeSet<String> connections = new TreeSet();
 
     HashMap<String, IChannel> channelMap = new HashMap<>();
-    Router alnRouter = new Router("android-client-1"); // TODO generate and persist locally
+    Router alnRouter;
+
 
     public static App getInstance() {
         return instance;
+    }
+
+    public void send(Packet packet) {
+        alnRouter.send(packet);
     }
 
     private void updateWifi() {
@@ -47,6 +68,20 @@ public class App extends Application {
     public void onCreate() {
         instance = this;
         super.onCreate();
+
+        loadServices();
+        loadDirectConnections();
+        numActiveConnections.setValue(0);
+
+        // use a consistent UUID for this node; create one if this is the first run
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String localAddress = prefs.getString("__localAddress", "");
+        if (localAddress.length() == 0) {
+            String addr = UUID.randomUUID().toString();
+            prefs.edit().putString("__localAddress", addr).apply();
+            localAddress = addr;
+        }
+        alnRouter = new Router(localAddress);
 
         updateWifi();
 
@@ -63,8 +98,6 @@ public class App extends Application {
                     if (isConnected) {
                         final Handler handler = new Handler(Looper.getMainLooper());
                         handler.postDelayed(() -> updateWifi(), 5000); // wait a long time before sync'ing UI
-                    } else {
-                        msg.setValue("wifi disconnected");
                     }
                 }
             }
@@ -139,19 +172,19 @@ public class App extends Application {
         }
     }
 
-    public String connectTo(BeaconInfo info, boolean enable) {
+    public String connectTo(String protocol, String host, short port, String node, boolean enable) {
         synchronized (channelMap) {
-            String path = String.format("%s:%d", info.host, info.port);
+            String path = String.format("%s:%d", host, port);
             if (enable && !channelMap.containsKey(path)) {
                 TcpChannel channel;
-                switch (info.protocol) {
+                switch (protocol) {
                 case "tcp+aln":
-                    channel = new TcpChannel(info.host, info.port);
+                    channel = new TcpChannel(host, port);
                     break;
                 case "tcp+maln":
-                    channel = new TcpChannel(info.host, info.port);
+                    channel = new TcpChannel(host, port);
                     Packet p = new Packet();
-                    p.DestAddress = info.path;
+                    p.DestAddress = node;
                     channel.send(p);
                     break;
                 default:
@@ -163,8 +196,8 @@ public class App extends Application {
                 channelMap.get(path).close();
                 channelMap.remove(path);
             }
+            numActiveConnections.postValue(channelMap.size());
         }
-
         localInetInfo.setValue(localInetInfo.getValue()); // trigger observers
         return null;
     }
@@ -174,5 +207,63 @@ public class App extends Application {
         synchronized (channelMap) {
             return channelMap.containsKey(path);
         }
+    }
+
+    public void saveActionItem(String service, String title, String content) {
+        if (!actions.containsKey(service)) {
+            actions.put(service, new TreeSet<>());
+        }
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        Set<String> existingCheck = prefs.getStringSet(service, new TreeSet<>());
+        Log.d("ALNN", String.format("%d exist", existingCheck.size()));
+
+        actions.get(service).add(String.format("%s\t%s", title, content));
+
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putStringSet(service, actions.get(service));
+        if (!services.contains(service)) {
+            services.add(service);
+            editor.putStringSet("__services", services);
+        }
+        editor.apply();
+    }
+
+    private void loadServices() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        services = prefs.getStringSet("__services", new TreeSet<>());
+
+        for (String service : services) {
+            Set<String> records = prefs.getStringSet(service, new TreeSet<>());
+            TreeSet<String> copy = new TreeSet<>();
+            for (String record : records) copy.add(record);
+            actions.put(service, copy);
+        }
+    }
+
+    public Set<String> getActionsForService(String service) {
+        return actions.get(service);
+    }
+
+    private void loadDirectConnections() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        Set<String> storedConns = prefs.getStringSet("__connections", new TreeSet<>());
+
+        for (String connection : storedConns) {
+            connections.add(connection);
+        }
+        directConnections.postValue(connections);
+    }
+
+    public void saveDirectConnection(String title, String url) {
+        if ((title.length() + url.length()) == 0)
+            return;
+
+        connections.add(String.format("%s\t%s", title, url));
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        prefs.edit().putStringSet("__connections", connections).apply();
+
+        directConnections.postValue(connections);
     }
 }

@@ -13,7 +13,6 @@ import java.util.Map;
 
 import biglittleidea.aln.Router;
 import biglittleidea.alnn.App;
-import biglittleidea.alnn.SeparatedListAdapter;
 import biglittleidea.alnn.databinding.FragmentMeshBinding;
 
 public class MeshFragment extends Fragment {
@@ -21,11 +20,6 @@ public class MeshFragment extends Fragment {
     Map<String, Router.NodeInfoItem> nodeInfo;
 
     void resetAdapters(ListView listView) {
-        App app = App.getInstance();
-        SeparatedListAdapter listAdapter = new SeparatedListAdapter(app);
-        for(String address : nodeInfo.keySet()) {
-            listAdapter.addSection(address, new NodeListAdapter(getActivity(), nodeInfo));
-        }
         listView.setAdapter(new NodeListAdapter(getActivity(), nodeInfo));
     }
 

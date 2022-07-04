@@ -1,30 +1,32 @@
 package biglittleidea.alnn.ui.mesh;
+import biglittleidea.aln.Packet;
 import biglittleidea.alnn.App;
 import biglittleidea.alnn.R;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.Dialog;
-import android.content.Context;
-import android.content.DialogInterface;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.nio.charset.StandardCharsets;
+
 public class PacketButtonListAdapter extends RecyclerView.Adapter<PacketButtonListAdapter.ViewHolder> {
 
-    private String[] localDataSet;
-    Activity activity;
+    private Activity activity;
+    private String service;
+    private NodeActionItem[] data;
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         private final View view;
         public ViewHolder(View view) {
             super(view);
-            // Define click listener for the ViewHolder's View
             this.view = view;
         }
 
@@ -37,9 +39,10 @@ public class PacketButtonListAdapter extends RecyclerView.Adapter<PacketButtonLi
         }
     }
 
-    public PacketButtonListAdapter(Activity activity, String[] dataSet) {
+    public PacketButtonListAdapter(Activity activity, String service, NodeActionItem[] data) {
         this.activity = activity;
-        localDataSet = dataSet;
+        this.service = service;
+        this.data = data;
     }
 
     @Override // Create new views (invoked by the layout manager)
@@ -53,30 +56,72 @@ public class PacketButtonListAdapter extends RecyclerView.Adapter<PacketButtonLi
     @Override // Replace the contents of a view (invoked by the layout manager)
     public void onBindViewHolder(ViewHolder viewHolder, final int position) {
 
-        if (position >= localDataSet.length) {
+        if (position >= data.length) {
             viewHolder.getImageView().setImageResource(R.drawable.icons8_plus);
         } else {
-            viewHolder.getTextView().setText(localDataSet[position]);
+            NodeActionItem item = data[position];
+            String text = item.title;
+            int imgResource = R.drawable.packet;
+            int bgColor = 0;
+            if (item.action.contains("#")) {
+                String[] parts = item.action.split(" ");
+                if (parts.length == 2 && parts[1].startsWith("#")) {
+                    imgResource = 0;
+                    bgColor = Color.parseColor(parts[1]);
+                }
+            }
+            viewHolder.getTextView().setText(text);
+            viewHolder.getImageView().setImageResource(imgResource);
+            viewHolder.getImageView().setBackgroundColor(bgColor);
         }
         viewHolder.view.setOnClickListener(onClickListener(position));
     }
 
     @Override // Return the size of your dataset (invoked by the layout manager)
     public int getItemCount() {
-        return localDataSet.length + 1;
+        return data.length + 1;
     }
 
     private View.OnClickListener onClickListener(final int position){
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final Dialog dialog = new Dialog(activity);
-                dialog.setContentView(R.layout.service_action_item);
-                dialog.setTitle("Position" + position);
-                dialog.setCancelable(true);
-                TextView name =(TextView)dialog.findViewById(R.id.text_view);
-                name.setText("dialog test");
-                dialog.show();
+                if (position >= PacketButtonListAdapter.this.data.length) {
+                    final Dialog dialog = new Dialog(activity);
+
+                    dialog.setContentView(R.layout.add_service_action_dialog);
+                    dialog.setTitle("Position" + position);
+                    dialog.setCancelable(true);
+                    dialog.findViewById(R.id.cancel_button).setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            dialog.cancel();
+                        }
+                    });
+                    dialog.findViewById(R.id.ok_button).setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            EditText titleEdit = dialog.findViewById(R.id.titleEdit);
+                            EditText contentEdit = dialog.findViewById(R.id.contentEdit);
+
+                            String title = titleEdit.getText().toString();
+                            String content = contentEdit.getText().toString();
+
+                            App.getInstance().saveActionItem(service, title, content);
+                            titleEdit.setText("");
+                            contentEdit.setText("");
+                            dialog.dismiss();
+                        }
+                    });
+                    dialog.show();
+                } else { // send packet as action
+                    NodeActionItem item = PacketButtonListAdapter.this.data[position];
+                    Packet p = new Packet();
+                    p.DestAddress = item.address;
+                    p.Service = item.service;
+                    p.Data = item.action.getBytes(StandardCharsets.UTF_8);
+                    App.getInstance().send(p);
+                }
             }
         };
     }

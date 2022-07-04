@@ -1,5 +1,7 @@
 package biglittleidea.aln;
 
+import android.util.Log;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -302,10 +304,10 @@ public class Router {
                 break;
 
             case Packet.NetState.SERVICE:
-                System.out.printf("router '%s' recv'd SERVICE update\n", address);
+                Log.d("ALNN", String.format("router '%s' recv'd SERVICE update\n", address));
                 ServiceNodeInfo serviceInfo = parseNetServiceShare(packet);
                 if (serviceInfo.err != null) {
-                    System.out.printf("error parsing net service: %s\n", serviceInfo.err);
+                    Log.d("ALNN", String.format("error parsing net service: %s\n", serviceInfo.err));
                     return;
                 }
                 synchronized (this) {
@@ -328,7 +330,7 @@ public class Router {
 
                     if (serviceQueue.containsKey(serviceInfo.service)) {
                         ArrayList<Packet> sq = serviceQueue.get(serviceInfo.service);
-                        System.out.printf("sending %d packet(s) to '%s'\n", sq.size(), serviceInfo.address);
+                        Log.d("ALNN", String.format("sending %d packet(s) to '%s'\n", sq.size(), serviceInfo.address));
                         if (remoteNodeMap.containsKey(serviceInfo.address)) {
                             RemoteNodeInfo routeInfo = remoteNodeMap.get(serviceInfo.address);
                             for (Packet p : sq) {
@@ -338,7 +340,7 @@ public class Router {
                             }
                             serviceQueue.remove(serviceInfo.service);
                         } else {
-                            System.out.printf("no route to discovered service %s\n", serviceInfo.service);
+                            Log.d("ALNN", String.format("no route to discovered service %s\n", serviceInfo.service));
                         }
                     }
                 }
@@ -354,7 +356,7 @@ public class Router {
                 break;
 
             case Packet.NetState.QUERY:
-                System.out.printf("router '%s' recv'd QUERY\n", address);
+                Log.d("ALNN", String.format("router '%s' recv'd QUERY\n", address));
                 for (Packet p : exportRouteTable())
                     channel.send(p);
                 for (Packet p : exportServiceTable())

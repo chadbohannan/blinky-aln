@@ -30,6 +30,10 @@
         <entry key="app/src/main/res/drawable/ic_launcher_background.xml" value="0.1185" />
         <entry key="app/src/main/res/drawable/ic_notifications_black_24dp.xml" value="0.1185" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/add_connection_dialog.xml" value="0.21197916666666666" />
+        <entry key="app/src/main/res/layout/add_connection_item_button.xml" value="0.24456521739130435" />
+        <entry key="app/src/main/res/layout/add_service_action_dialog.xml" value="0.21197916666666666" />
+        <entry key="app/src/main/res/layout/colorpicker_dialog.xml" value="0.2871046228710462" />
         <entry key="app/src/main/res/layout/fragment_bluetooth.xml" value="0.271286231884058" />
         <entry key="app/src/main/res/layout/fragment_dashboard.xml" value="0.17274569402228976" />
         <entry key="app/src/main/res/layout/fragment_home.xml" value="0.165" />
@@ -38,6 +42,9 @@
         <entry key="app/src/main/res/layout/fragment_wifi.xml" value="0.2203125" />
         <entry key="app/src/main/res/layout/list_header.xml" value="0.21927083333333333" />
         <entry key="app/src/main/res/layout/mesh_node_item.xml" value="0.271286231884058" />
+        <entry key="app/src/main/res/layout/net_connection_list.xml" value="0.24456521739130435" />
+        <entry key="app/src/main/res/layout/new_service_action_dialog.xml" value="0.27309782608695654" />
+        <entry key="app/src/main/res/layout/saved_connection_item.xml" value="0.2203125" />
         <entry key="app/src/main/res/layout/service_action_item.xml" value="0.55" />
         <entry key="app/src/main/res/layout/service_action_list.xml" value="0.21979166666666666" />
         <entry key="app/src/main/res/layout/service_node_item.xml" value="0.271286231884058" />
