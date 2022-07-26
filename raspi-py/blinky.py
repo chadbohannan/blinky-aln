@@ -33,9 +33,21 @@ def main():
         port = int(hostParts[1])
         malnAddr = parts[1]
         break
-
+    s.close()
+    
     print('parsed host:', protocol, host, port, malnAddr)
+    
 
+    def on_chat(packet):
+        print('chat: ' + packet.data.decode('utf-8'))
+    router.register_service("chat", on_chat)
+    
+    def on_led_control(packet):
+        # import pdb; pdb.set_trace()
+        data = bytearray(packet.data).decode('utf-8')
+        print('led control: ' + data)
+
+    router.register_service("8x8_led_control", on_led_control)
 
     # connect to an existing node in the network
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -48,7 +60,6 @@ def main():
     ch.send(Packet(destAddr=malnAddr))
     time.sleep(0.2)
     router.add_channel(TcpChannel(sock))
-
 
     # listen for ^C
     lock = Lock()
@@ -66,11 +77,6 @@ def main():
     # ctxID = router.register_context_handler(on_pong)
     # msg = router.send(Packet(service="name", contextID=ctxID))
     # if msg: print("on send:", msg)
-
-    def on_led_control(packet):
-        print(packet.data.decode('utf-8'))
-
-    router.register_service("8x8_led_control", on_led_control)
 
     # hang until ^C
     lock.acquire() # take the lock
