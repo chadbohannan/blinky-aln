@@ -71,6 +71,12 @@ public class Router {
         onStateChangedListener = listener;
     }
 
+    private void notifyListeners() {
+        if (onStateChangedListener != null) {
+            onStateChangedListener.onStateChanged();
+        }
+    }
+
     public String selectService(String service) {
         if (serviceHandlerMap.containsKey(service))
             return this.address;
@@ -90,7 +96,7 @@ public class Router {
         return remoteAddress;
     }
 
-    // TODO normal java behavior is to throw exceptions, not return error messages
+    // TODO java is supposed to throw exceptions, not return error strings
     public String send(Packet p) {
         synchronized (this) {
             if (p.SourceAddress == null || p.SourceAddress.length() == 0) {
@@ -108,7 +114,7 @@ public class Router {
                         packets = serviceQueue.get(p.Service);
                     }
                     packets.add(p);
-                    System.out.println("service unavailable, packet queued");
+                    Log.d("ALNN", "service unavailable, packet queued");
                 }
             }
         }
@@ -122,7 +128,7 @@ public class Router {
                 handler = this.contextHandlerMap.get(p.ContextID);
                 handler.onPacket(p);
             } else {
-                return System.out.printf("service '%s' not registered\n", p.Service).toString();
+                return String.format("service '%s' not registered\n", p.Service).toString();
             }
         } else if (p.NextAddress == null || p.NextAddress.equals(this.address) || p.NextAddress.length() == 0) {
             if (this.remoteNodeMap.containsKey(p.DestAddress)) {
@@ -245,11 +251,10 @@ public class Router {
     protected void handleNetState(IChannel channel, Packet packet) {
         switch (packet.Net) {
             case Packet.NetState.ROUTE:
-                System.out.printf("router '%s' recv'd ROUTE update\n", address);
                 // neighbor is sharing it's routing table
                 RemoteNodeInfo info = parseNetRouteShare(packet);
                 if (info.err != null) {
-                    System.out.println(info.err);
+                    Log.d("ALNN", "parseNetRouteShare err: " + info.err);
                     return;
                 }
 
@@ -298,9 +303,7 @@ public class Router {
                         }
                     }
                 }
-                if (onStateChangedListener != null) {
-                    onStateChangedListener.onStateChanged();
-                }
+                notifyListeners();
                 break;
 
             case Packet.NetState.SERVICE:
@@ -350,9 +353,7 @@ public class Router {
                         ch.send(packet);
                     }
                 }
-                if (onStateChangedListener != null) {
-                    onStateChangedListener.onStateChanged();
-                }
+                notifyListeners();
                 break;
 
             case Packet.NetState.QUERY:
@@ -406,7 +407,7 @@ public class Router {
                 }
             }
         }
-
+        notifyListeners();
     }
 
     protected void removeAddress(String address) {
@@ -416,18 +417,21 @@ public class Router {
                 nlm.remove(address);
             }
         }
+        notifyListeners();
     }
 
     public void registerService(String service, IPacketHandler handler) {
         synchronized (this) {
             serviceHandlerMap.put(service, handler);
         }
+        notifyListeners();
     }
 
     public void unregisterService(String service) {
         synchronized (this) {
             serviceHandlerMap.remove(service);
         }
+        notifyListeners();
     }
 
 

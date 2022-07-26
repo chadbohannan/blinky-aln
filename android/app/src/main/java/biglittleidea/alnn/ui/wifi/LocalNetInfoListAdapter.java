@@ -53,9 +53,12 @@ public class LocalNetInfoListAdapter extends BaseAdapter {
             info.inetAddress.toString(),
             info.bcastAddress.toString()
         ));
+        short port = 8082; // TODO expose parameter to UI
+
+        TextView portText = view.findViewById(R.id.portView);
+        portText.setText(String.format("port %d", port));
 
         Switch toggle = view.findViewById(R.id.listen_switch);
-        short port = 8282; // TODO expose parameter to UI
         toggle.setChecked(app.isListeningToUDP(info.bcastAddress, port));
         toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override

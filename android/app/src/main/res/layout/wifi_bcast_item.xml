@@ -28,6 +28,8 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 
+
+
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -38,6 +40,18 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <TextView
+            android:id="@+id/portView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/button_margin"
+            android:layout_marginLeft="@dimen/button_margin"
+            android:textColor="@color/black"
+            android:textSize="7pt"
+            android:text="PORT"
+            app:layout_constraintLeft_toRightOf="@id/textView"
+            app:layout_constraintTop_toTopOf="@id/textView" />
+
         <Switch
             android:id="@+id/listen_switch"
             android:layout_width="wrap_content"
@@ -45,15 +59,7 @@
             android:textSize="8pt"
             android:switchMinWidth="76dp"
             android:text="Listen" />
-        <Switch
-            android:id="@+id/broadcast_switch"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:textSize="8pt"
-            android:switchMinWidth="76dp"
-            android:layout_marginTop="10dp"
-            android:text="Broadcast"
-            android:enabled="false"/>
+
     </androidx.appcompat.widget.LinearLayoutCompat>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

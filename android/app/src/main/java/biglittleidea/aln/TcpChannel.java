@@ -68,7 +68,6 @@ public class TcpChannel implements IChannel {
     public void receive(IPacketHandler packetHandler, IChannelCloseHandler closeHandler) {
         Parser parser = new Parser(packetHandler);
         if (socket != null && socket.isOpen()) {
-            int buffSize = 4096;
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -81,7 +80,7 @@ public class TcpChannel implements IChannel {
                             }
                             continue;
                         }
-                        ByteBuffer[] buffer = new ByteBuffer[]{ByteBuffer.allocate(buffSize)};
+                        ByteBuffer[] buffer = new ByteBuffer[]{ByteBuffer.allocate(1)};
                         try {
                             long n = socket.read(buffer, 0, 1);
                             if (n == 0) {

@@ -28,6 +28,7 @@ import biglittleidea.aln.IChannel;
 import biglittleidea.aln.Router;
 import biglittleidea.aln.TcpChannel;
 import biglittleidea.aln.Packet;
+import biglittleidea.aln.TlsChannel;
 
 public class App extends Application {
     private static App instance;
@@ -176,17 +177,31 @@ public class App extends Application {
         synchronized (channelMap) {
             String path = String.format("%s:%d", host, port);
             if (enable && !channelMap.containsKey(path)) {
-                TcpChannel channel;
+                Packet p;
+                IChannel channel;
                 switch (protocol) {
                 case "tcp+aln":
                     channel = new TcpChannel(host, port);
                     break;
                 case "tcp+maln":
+
                     channel = new TcpChannel(host, port);
-                    Packet p = new Packet();
+                    p = new Packet();
                     p.DestAddress = node;
                     channel.send(p);
                     break;
+
+                case "tls+aln":
+                    channel = new TlsChannel(host, port);
+                    break;
+
+                case "tls+maln":
+                    channel = new TlsChannel(host, port);
+                    p = new Packet();
+                    p.DestAddress = node;
+                    channel.send(p);
+                    break;
+
                 default:
                     return "protocol not supported";
                 }
