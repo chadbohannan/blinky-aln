@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="../../../../../layout/custom_preview.xml" value="0.209375" />
+        <entry key="../../../../layout/custom_preview.xml" value="0.21784420289855072" />
+        <entry key="app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/baseline_bluetooth_24.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/custom_border.xml" value="0.18" />
+        <entry key="app/src/main/res/drawable/ic_action_apply.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_back.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_close.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_donate.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_download.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_feedback.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_home.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_kustom.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_menu.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_new_releases.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_reload.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_save.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_search.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_selectall.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_star.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_action_zooper.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_bullet_point.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_dashboard_black_24dp.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_home_black_24dp.xml" value="0.2005" />
+        <entry key="app/src/main/res/drawable/ic_launcher_background.xml" value="0.1185" />
+        <entry key="app/src/main/res/drawable/ic_notifications_black_24dp.xml" value="0.1185" />
+        <entry key="app/src/main/res/layout/activity_main.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/add_connection_dialog.xml" value="0.21197916666666666" />
+        <entry key="app/src/main/res/layout/add_connection_item_button.xml" value="0.24456521739130435" />
+        <entry key="app/src/main/res/layout/add_service_action_dialog.xml" value="0.21197916666666666" />
+        <entry key="app/src/main/res/layout/colorpicker_dialog.xml" value="0.2871046228710462" />
+        <entry key="app/src/main/res/layout/fragment_bluetooth.xml" value="0.271286231884058" />
+        <entry key="app/src/main/res/layout/fragment_dashboard.xml" value="0.17274569402228976" />
+        <entry key="app/src/main/res/layout/fragment_home.xml" value="0.165" />
+        <entry key="app/src/main/res/layout/fragment_mesh.xml" value="0.271286231884058" />
+        <entry key="app/src/main/res/layout/fragment_notifications.xml" value="0.2536231884057971" />
+        <entry key="app/src/main/res/layout/fragment_wifi.xml" value="0.2203125" />
+        <entry key="app/src/main/res/layout/list_header.xml" value="0.21927083333333333" />
+        <entry key="app/src/main/res/layout/mesh_node_item.xml" value="0.271286231884058" />
+        <entry key="app/src/main/res/layout/net_connection_list.xml" value="0.24456521739130435" />
+        <entry key="app/src/main/res/layout/new_service_action_dialog.xml" value="0.27309782608695654" />
+        <entry key="app/src/main/res/layout/saved_connection_item.xml" value="0.2203125" />
+        <entry key="app/src/main/res/layout/service_action_item.xml" value="0.55" />
+        <entry key="app/src/main/res/layout/service_action_list.xml" value="0.21979166666666666" />
+        <entry key="app/src/main/res/layout/service_node_item.xml" value="0.271286231884058" />
+        <entry key="app/src/main/res/layout/wifi_bcast_item.xml" value="0.271286231884058" />
+        <entry key="app/src/main/res/layout/wifi_beacon_item.xml" value="0.35520833333333335" />
+        <entry key="app/src/main/res/layout/wifi_list_adapter.xml" value="0.21927083333333333" />
+        <entry key="app/src/main/res/menu/bottom_nav_menu.xml" value="0.21979166666666666" />
+      </map>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="Android Studio default JDK" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/build/classes" />
+  </component>
+  <component name="ProjectType">
+    <option name="id" value="Android" />
+  </component>
+  <component name="VisualizationToolProject">
+    <option name="state">
+      <ProjectState>
+        <option name="scale" value="0.2203125" />
+      </ProjectState>
+    </option>
+  </component>
+</project>

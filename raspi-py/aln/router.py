@@ -17,7 +17,6 @@ def makeNetworkRouteSharePacket(srcAddr, destAddr, cost):
     data.extend(byteLen(destAddr))
     data.extend(bytes(destAddr, "utf-8"))
     data.extend(writeINT16U(cost))
-    # data = byteLen(destAddr) + bytes(destAddr, "utf-8") + writeINT16U(cost)
     return Packet(netState=Packet.NET_ROUTE, srcAddr=srcAddr,data=data)
 
 def parseNetworkRouteSharePacket(packet): # returns dest, next-hop, cost, err
@@ -95,6 +94,7 @@ class Router(Thread):
                     time.sleep(0.1)
                     self.share_net_state()
                 else: # remove route
+                    print("removing route to", remoteAddress)
                     del self.remoteNodeMap[remoteAddress]
                     for loadMap in self.serviceLoadMap.values():
                         del loadMap[address]
@@ -143,12 +143,9 @@ class Router(Thread):
                         else:
                             print("NET ERROR no route for advertised service: ", service)
                     del(self.serviceQueue, service)
-        elif packet.netState == Packet.NET_QUERY:     
-            for routePacket in self.export_routes():
-                channel.send(routePacket)
-            for servicePacket in self.export_services():
-                channel.send(servicePacket)
-
+        elif packet.netState == Packet.NET_QUERY:    
+            self.share_net_state() 
+    
     def on_packet(self, channel, packet):
         if packet.netState:
             with self.lock:
@@ -229,10 +226,13 @@ class Router(Thread):
     def register_service(self, service, handler):
         with self.lock:
             self.serviceMap[service] = handler
+        self.export_services()
 
     def unregister_service(self, service):
         with self.lock:
             self.serviceMap.pol(service, None)
+        # TODO send service offline packet
+        self.share_net_state()
 
     def select_service(self, service):
         # return the address of service with lowest reported load or None
@@ -263,21 +263,25 @@ class Router(Thread):
         # compose a list of packets encoding the service table of this node
         services = []
         for service in self.serviceMap:
-            load = 0 # TODO measure load
+            print("sharing local service", service)
+            load = 1 # TODO measure load
             services.append(makeNetworkServiceSharePacket(self.address, service, load))
         for service in self.serviceLoadMap:
             loadMap = self.serviceLoadMap[service]
             for remoteAddress in self.loadMap: # TODO sort by increasing load (first tx'd is lowest load)
+                print("sharing remote service", service, " at ", remoteAddress)
                 load = self.loadMap[remoteAddress]
                 # TODO filter expired or unroutable entries
                 services.append(makeNetworkServiceSharePacket(remoteAddress, service, load))
         return services
 
     def share_net_state(self):
+        routes = self.export_routes()
+        services = self.export_services()
         for channel in self.channels:
-            for routePacket in self.export_routes():
+            for routePacket in routes:
                 channel.send(routePacket)
-            for servicePacket in self.export_services():
+            for servicePacket in services:
                 channel.send(servicePacket)
 
     def close(self):
