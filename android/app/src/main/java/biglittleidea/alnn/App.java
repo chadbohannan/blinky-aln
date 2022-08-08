@@ -1,17 +1,23 @@
 package biglittleidea.alnn;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Application;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import androidx.core.app.ActivityCompat;
 import androidx.lifecycle.MutableLiveData;
 
 import java.net.InetAddress;
@@ -39,8 +45,9 @@ public class App extends Application {
     public final MutableLiveData<Map<String, Router.NodeInfoItem>> nodeInfo = new MutableLiveData<>();
     public final MutableLiveData<Set<String>> directConnections = new MutableLiveData<>();
     public final MutableLiveData<Integer> numActiveConnections = new MutableLiveData<>();
-//    public String qrDialogLabel = "";
-//    public String qrScanResult = "";
+    public final MutableLiveData<List<BluetoothDevice>> bluetoothDevices = new MutableLiveData<>();
+    public final MutableLiveData<String> bluetoothDiscoveryStatus = new MutableLiveData<>();
+    public final MutableLiveData<Boolean> bluetoothDiscoveryIsActive = new MutableLiveData<>();
 
     public final MutableLiveData<String> qrDialogLabel = new MutableLiveData<>();
     public final MutableLiveData<String> qrScanResult = new MutableLiveData<>();
@@ -52,6 +59,7 @@ public class App extends Application {
     HashMap<String, IChannel> channelMap = new HashMap<>();
     Router alnRouter;
 
+    BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
     public static App getInstance() {
         return instance;
@@ -73,6 +81,8 @@ public class App extends Application {
         loadServices();
         loadDirectConnections();
         numActiveConnections.setValue(0);
+        bluetoothDiscoveryIsActive.setValue(false);
+        bluetoothDevices.setValue(new ArrayList<>());
 
         // use a consistent UUID for this node; create one if this is the first run
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -127,8 +137,8 @@ public class App extends Application {
                 if (infos == null) {
                     infos = new ArrayList<BeaconInfo>();
                 }
-                for(BeaconInfo _info : infos) {
-                    if(info.equals(_info))
+                for (BeaconInfo _info : infos) {
+                    if (info.equals(_info))
                         return;
                 }
                 infos.add(info);
@@ -163,6 +173,7 @@ public class App extends Application {
     }
 
     HashMap<String, UDPListener> bcastListenMap = new HashMap<>();
+
     public boolean isListeningToUDP(InetAddress bcastAddress, short port) {
         String path = String.format("%s:%d", bcastAddress.toString(), port);
         synchronized (bcastListenMap) {
@@ -180,30 +191,33 @@ public class App extends Application {
                 Packet p;
                 IChannel channel;
                 switch (protocol) {
-                case "tcp+aln":
-                    channel = new TcpChannel(host, port);
-                    break;
-                case "tcp+maln":
+                    case "bluetooth":
+                        // TODO
+                        break;
+                    case "tcp+aln":
+                        channel = new TcpChannel(host, port);
+                        break;
+                    case "tcp+maln":
 
-                    channel = new TcpChannel(host, port);
-                    p = new Packet();
-                    p.DestAddress = node;
-                    channel.send(p);
-                    break;
+                        channel = new TcpChannel(host, port);
+                        p = new Packet();
+                        p.DestAddress = node;
+                        channel.send(p);
+                        break;
 
-                case "tls+aln":
-                    channel = new TlsChannel(host, port);
-                    break;
+                    case "tls+aln":
+                        channel = new TlsChannel(host, port);
+                        break;
 
-                case "tls+maln":
-                    channel = new TlsChannel(host, port);
-                    p = new Packet();
-                    p.DestAddress = node;
-                    channel.send(p);
-                    break;
+                    case "tls+maln":
+                        channel = new TlsChannel(host, port);
+                        p = new Packet();
+                        p.DestAddress = node;
+                        channel.send(p);
+                        break;
 
-                default:
-                    return "protocol not supported";
+                    default:
+                        return "protocol not supported";
                 }
                 alnRouter.addChannel(channel);
                 channelMap.put(path, channel);
@@ -280,5 +294,67 @@ public class App extends Application {
         prefs.edit().putStringSet("__connections", connections).apply();
 
         directConnections.postValue(connections);
+    }
+
+    public void removeDirectConnection(String content) {
+        TreeSet<String> newConnections = new TreeSet();
+        for (String connection : connections) {
+            if (!connection.equals(content)) {
+                newConnections.add(connection);
+            }
+        }
+        connections = newConnections;
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        prefs.edit().putStringSet("__connections", connections).apply();
+
+        directConnections.postValue(connections);
+    }
+
+    public void toggleBluetoothDiscovery() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        if (bluetoothDiscoveryIsActive.getValue().booleanValue()) {
+            bluetoothAdapter.cancelDiscovery();
+            bluetoothDiscoveryStatus.setValue("discovery canceled");
+            bluetoothDiscoveryIsActive.setValue(false);
+            return;
+        }
+
+        bluetoothDiscoveryStatus.setValue("initializing discovery...");
+        bluetoothDevices.setValue(new ArrayList<>());
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        registerReceiver(new BroadcastReceiver() {
+
+            @SuppressLint("MissingPermission")
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                final String action = intent.getAction();
+                List<BluetoothDevice> devices = bluetoothDevices.getValue();
+                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                    BluetoothDevice temp = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    if (devices.contains(temp)) {
+                        Log.i("ALNN", "skipping:" + temp.getName() + ":" + temp.getAddress());
+                    } else {
+                        devices.add(temp);
+                    }
+                    String msg = String.format("%d bluetooth devices found", devices.size());
+                    bluetoothDiscoveryStatus.setValue(msg);
+                } else if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(intent.getAction())) {
+                    bluetoothDiscoveryStatus.setValue("discovery started");
+                } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(intent.getAction())) {
+                    bluetoothDiscoveryStatus.setValue("discovery finished");
+                    bluetoothDiscoveryIsActive.setValue(false);
+                }
+                bluetoothDevices.postValue(devices);
+            }
+        }, filter);
+
+        bluetoothAdapter.startDiscovery();
+        bluetoothDiscoveryIsActive.setValue(true);
     }
 }

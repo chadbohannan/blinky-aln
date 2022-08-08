@@ -1,6 +1,7 @@
 package biglittleidea.aln;
 
 import android.os.Build;
+import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
@@ -56,7 +57,7 @@ public class TcpChannel implements IChannel {
             });
             sendThread.start();
         } catch (Exception e) {
-            System.out.println(e.getLocalizedMessage());
+            Log.d("ALNN", String.format("TcpChannel(): %s", e.getLocalizedMessage()));
         }
     }
 
@@ -108,7 +109,7 @@ public class TcpChannel implements IChannel {
         try {
             socket.close();
         } catch (Exception e) {
-            System.out.println(e.getLocalizedMessage());
+            Log.d("ALNN", String.format("TcpChannel.close(): %s", e.getLocalizedMessage()));
         }
         sendQueue.offer(new Packet());
     }

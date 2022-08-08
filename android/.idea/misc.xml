@@ -33,6 +33,7 @@
         <entry key="app/src/main/res/layout/add_connection_dialog.xml" value="0.21197916666666666" />
         <entry key="app/src/main/res/layout/add_connection_item_button.xml" value="0.24456521739130435" />
         <entry key="app/src/main/res/layout/add_service_action_dialog.xml" value="0.21197916666666666" />
+        <entry key="app/src/main/res/layout/bluetooth_discovery_item.xml" value="0.35520833333333335" />
         <entry key="app/src/main/res/layout/colorpicker_dialog.xml" value="0.2871046228710462" />
         <entry key="app/src/main/res/layout/fragment_bluetooth.xml" value="0.271286231884058" />
         <entry key="app/src/main/res/layout/fragment_dashboard.xml" value="0.17274569402228976" />

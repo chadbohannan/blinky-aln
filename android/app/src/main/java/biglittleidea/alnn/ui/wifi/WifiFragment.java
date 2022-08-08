@@ -27,42 +27,7 @@ public class WifiFragment extends Fragment {
         DirectConnectionItem[] array = new DirectConnectionItem[set.size()];
         int i = 0;
         for (String value : set) {
-            String title, protocol, address, host, node = "";
-            short port = 8181;
-            String[] parts = value.split("\t");
-            switch (parts.length) {
-                case 2:
-                    title = parts[0];
-                    parts = parts[1].split("://");
-                    if (parts.length == 2) {
-                        protocol = parts[0];
-                        address = parts[1];
-                    } else{
-                        protocol = "unknown";
-                        address = parts[0];
-                    }
-                    break;
-                case 3:
-                    title = parts[0];
-                    protocol = parts[1];
-                    address = parts[2];
-                    break;
-                default:
-                protocol = "";
-                address = parts[0];
-                title = "untitled";
-            }
-            parts = address.split("/");
-            address = parts[0];
-            if (parts.length == 2) {
-                node = parts[1];
-            }
-            parts = address.split(":");
-            host = parts[0];
-            if (parts.length == 2) {
-                port = Short.parseShort(parts[1]);
-            }
-            array[i++] = new DirectConnectionItem(title, protocol, host, port, node);
+            array[i++] = new DirectConnectionItem(value);
         }
         return array;
     }
@@ -74,9 +39,6 @@ public class WifiFragment extends Fragment {
         final ListView interfaceListView = binding.interfaceListView;
         final ListView discoveryListView = binding.discoveryListView;
         final ListView directListView = binding.directListView;
-
-
-
 
         app.localInetInfo.observe(getViewLifecycleOwner(), localInetInfos -> {
             interfaceListView.setAdapter(new LocalNetInfoListAdapter(app, localInetInfos));

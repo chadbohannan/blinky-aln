@@ -1,6 +1,7 @@
 package biglittleidea.aln;
 
 import android.os.Build;
+import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
@@ -38,6 +39,9 @@ public class TlsChannel implements IChannel {
                         socket = SSLSocketFactory.getDefault().createSocket(host, port);
                     } catch (IOException e) {
                         e.printStackTrace();
+                    }
+                    if (socket == null) {
+                        return;
                     }
                     synchronized (this) {
                         if (packetHandler != null && !isRunning) {
@@ -78,7 +82,7 @@ public class TlsChannel implements IChannel {
             });
             sendThread.start();
         } catch (Exception e) {
-            System.out.println(e.getLocalizedMessage());
+            Log.d("ALNN", String.format("TlsChannel(): %s", e.getLocalizedMessage()));
         }
     }
 
@@ -147,7 +151,7 @@ public class TlsChannel implements IChannel {
         try {
             socket.close();
         } catch (Exception e) {
-            System.out.println(e.getLocalizedMessage());
+            Log.d("ALNN", String.format("TslChannel.close(): %s", e.getLocalizedMessage()));
         }
         sendQueue.offer(new Packet());
     }
