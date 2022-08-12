@@ -31,8 +31,6 @@ public class BluetoothFragment extends Fragment {
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-//        BluetoothViewModel bluetoothViewModel =
-//                new ViewModelProvider(this).get(BluetoothViewModel.class);
 
         binding = FragmentBluetoothBinding.inflate(inflater, container, false);
         View root = binding.getRoot();

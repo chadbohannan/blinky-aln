@@ -1,7 +1,8 @@
 # Setting up python client
 
 ```
-apt install python-bluez
+apt install python-bluez bluetooth libbluetooth-dev
+python3 -m pip install pybluez
 ```
 
 Problem:

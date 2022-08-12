@@ -307,7 +307,7 @@ public class Router {
                 break;
 
             case Packet.NetState.SERVICE:
-                Log.d("ALNN", String.format("router '%s' recv'd SERVICE update\n", address));
+//                Log.d("ALNN", String.format("router '%s' recv'd SERVICE update\n", address));
                 ServiceNodeInfo serviceInfo = parseNetServiceShare(packet);
                 if (serviceInfo.err != null) {
                     Log.d("ALNN", String.format("error parsing net service: %s\n", serviceInfo.err));
@@ -357,7 +357,7 @@ public class Router {
                 break;
 
             case Packet.NetState.QUERY:
-                Log.d("ALNN", String.format("router '%s' recv'd QUERY\n", address));
+//                Log.d("ALNN", String.format("router '%s' recv'd QUERY\n", address));
                 for (Packet p : exportRouteTable())
                     channel.send(p);
                 for (Packet p : exportServiceTable())

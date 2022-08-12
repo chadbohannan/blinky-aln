@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LifecycleOwner;
 
 import java.util.Set;
 
@@ -41,7 +42,8 @@ public class WifiFragment extends Fragment {
         final ListView directListView = binding.directListView;
 
         app.localInetInfo.observe(getViewLifecycleOwner(), localInetInfos -> {
-            interfaceListView.setAdapter(new LocalNetInfoListAdapter(app, localInetInfos));
+            LifecycleOwner lco = getViewLifecycleOwner();
+            interfaceListView.setAdapter(new LocalNetInfoListAdapter(getActivity(), lco, localInetInfos));
             ViewGroup.LayoutParams params = interfaceListView.getLayoutParams();
 
             float dip = 91f;

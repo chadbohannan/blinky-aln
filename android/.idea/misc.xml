@@ -49,6 +49,7 @@
         <entry key="app/src/main/res/layout/service_action_item.xml" value="0.55" />
         <entry key="app/src/main/res/layout/service_action_list.xml" value="0.21979166666666666" />
         <entry key="app/src/main/res/layout/service_node_item.xml" value="0.271286231884058" />
+        <entry key="app/src/main/res/layout/set_listen_port_dialog.xml" value="0.24456521739130435" />
         <entry key="app/src/main/res/layout/wifi_bcast_item.xml" value="0.271286231884058" />
         <entry key="app/src/main/res/layout/wifi_beacon_item.xml" value="0.35520833333333335" />
         <entry key="app/src/main/res/layout/wifi_list_adapter.xml" value="0.21927083333333333" />

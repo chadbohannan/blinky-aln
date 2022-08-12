@@ -56,10 +56,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-//        String scan = App.getInstance().qrScanResult.getValue();
-//        if (scan != null && scan.length() > 0) {
-//            new AlertDialog.Builder(this).setTitle("TODO handle result:" + scan).show();
-//        }
     }
 
     @Override

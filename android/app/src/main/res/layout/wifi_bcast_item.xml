@@ -44,10 +44,11 @@
             android:id="@+id/portView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/button_margin"
-            android:layout_marginLeft="@dimen/button_margin"
+            android:paddingLeft="20dp"
+            android:paddingRight="20dp"
+            android:background="@drawable/custom_border"
             android:textColor="@color/black"
-            android:textSize="7pt"
+            android:textSize="8pt"
             android:text="PORT"
             app:layout_constraintLeft_toRightOf="@id/textView"
             app:layout_constraintTop_toTopOf="@id/textView" />
@@ -55,9 +56,11 @@
         <Switch
             android:id="@+id/listen_switch"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:textSize="8pt"
+            android:padding="8dp"
             android:switchMinWidth="76dp"
+            android:textColor="@color/black"
             android:text="Listen" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>

@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.app.Application;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -20,6 +21,7 @@ import android.util.Log;
 import androidx.core.app.ActivityCompat;
 import androidx.lifecycle.MutableLiveData;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,6 +32,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 
+import biglittleidea.aln.BluetoothChannel;
 import biglittleidea.aln.IChannel;
 import biglittleidea.aln.Router;
 import biglittleidea.aln.TcpChannel;
@@ -184,6 +187,35 @@ public class App extends Application {
         }
     }
 
+    @SuppressLint("MissingPermission")
+    public String connectTo(BluetoothDevice device, String serviceUuid, boolean enable) {
+        String path = String.format("%s:%s", device.getAddress(), serviceUuid);
+        if (enable) {
+            try {
+                BluetoothSocket socket = device.createRfcommSocketToServiceRecord(UUID.fromString(serviceUuid));
+                IChannel channel = new BluetoothChannel(socket);
+                alnRouter.addChannel(channel);
+                channelMap.put(path, channel);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return e.getLocalizedMessage();
+            }
+        } else if (channelMap.containsKey(path)) {
+            channelMap.get(path).close();
+            channelMap.remove(path);
+        }
+        numActiveConnections.postValue(channelMap.size());
+        bluetoothDevices.postValue(bluetoothDevices.getValue()); // trigger redraw
+        return null;
+    }
+
+    public boolean isConnected(BluetoothDevice device, String serviceUuid) {
+        String path = String.format("%s:%s", device.getAddress(), serviceUuid);
+        synchronized (channelMap) {
+            return channelMap.containsKey(path);
+        }
+    }
+
     public String connectTo(String protocol, String host, short port, String node, boolean enable) {
         synchronized (channelMap) {
             String path = String.format("%s:%d", host, port);
@@ -191,9 +223,6 @@ public class App extends Application {
                 Packet p;
                 IChannel channel;
                 switch (protocol) {
-                    case "bluetooth":
-                        // TODO
-                        break;
                     case "tcp+aln":
                         channel = new TcpChannel(host, port);
                         break;
@@ -336,25 +365,35 @@ public class App extends Application {
                 final String action = intent.getAction();
                 List<BluetoothDevice> devices = bluetoothDevices.getValue();
                 if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                    BluetoothDevice temp = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    if (devices.contains(temp)) {
-                        Log.i("ALNN", "skipping:" + temp.getName() + ":" + temp.getAddress());
-                    } else {
-                        devices.add(temp);
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    if (!devices.contains(device)) {
+                        devices.add(device);
                     }
-                    String msg = String.format("%d bluetooth devices found", devices.size());
-                    bluetoothDiscoveryStatus.setValue(msg);
                 } else if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(intent.getAction())) {
                     bluetoothDiscoveryStatus.setValue("discovery started");
                 } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(intent.getAction())) {
                     bluetoothDiscoveryStatus.setValue("discovery finished");
                     bluetoothDiscoveryIsActive.setValue(false);
                 }
+                String msg = String.format("%d bluetooth devices found", devices.size());
+                bluetoothDiscoveryStatus.setValue(msg);
                 bluetoothDevices.postValue(devices);
             }
         }, filter);
 
         bluetoothAdapter.startDiscovery();
         bluetoothDiscoveryIsActive.setValue(true);
+    }
+
+    public short getNetListenPortForInterface(String iface) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        int port = prefs.getInt("__port_for_"+iface, 8082);
+        return (short)port;
+    }
+
+    public void setNetListenPortForInterface(String iface, short port) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        prefs.edit().putInt("__port_for_"+iface, port).apply();
+        localInetInfo.setValue(localInetInfo.getValue());
     }
 }

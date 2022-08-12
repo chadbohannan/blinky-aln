@@ -42,7 +42,6 @@ public class DirectConnectionListAdapter extends BaseAdapter {
         this.activity = activity;
         this.connectionList = connectionList;
         this.lifecycleOwner = lifecycleOwner;
-//        dialog = makeAddConnectionDialog();
     }
 
     @Override

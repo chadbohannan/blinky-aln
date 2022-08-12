@@ -29,13 +29,7 @@ public class BluetoothDiscoveryListAdapter extends BaseAdapter {
             ParcelUuid[] uuids = device.getUuids();
             if (uuids == null)
                 continue;
-            for (ParcelUuid uuid : uuids) {
-                Log.d("ALNN", "uuid:" + uuid.toString());
-                if (uuid.toString().equals(serviceUUID)) {
-                    this.deviceList.add(device);
-                    break;
-                }
-            }
+            this.deviceList.add(device);
         }
     }
 
@@ -64,7 +58,20 @@ public class BluetoothDiscoveryListAdapter extends BaseAdapter {
         String addr = device.getAddress();
         int len = device.getUuids().length;
         nameText.setText(String.format("%s (%d) %s", name,  len, addr));
-        App.getInstance().connectTo("bluetooth", device.getAddress(), (short)0, serviceUUID, true);
+        final boolean isConnected = App.getInstance().isConnected(device, serviceUUID);
+        if (isConnected) {
+            view.findViewById(R.id.icon).setVisibility(View.VISIBLE);
+        } else {
+            view.findViewById(R.id.icon).setVisibility(View.INVISIBLE);
+        }
+        view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                App.getInstance().connectTo(device, serviceUUID, !isConnected);
+            }
+        });
+
         return view;
     }
 }

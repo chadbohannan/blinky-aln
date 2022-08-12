@@ -263,15 +263,13 @@ class Router(Thread):
         # compose a list of packets encoding the service table of this node
         services = []
         for service in self.serviceMap:
-            print("sharing local service", service)
             load = 1 # TODO measure load
             services.append(makeNetworkServiceSharePacket(self.address, service, load))
         for service in self.serviceLoadMap:
             loadMap = self.serviceLoadMap[service]
             for remoteAddress in self.loadMap: # TODO sort by increasing load (first tx'd is lowest load)
-                print("sharing remote service", service, " at ", remoteAddress)
-                load = self.loadMap[remoteAddress]
                 # TODO filter expired or unroutable entries
+                load = self.loadMap[remoteAddress]
                 services.append(makeNetworkServiceSharePacket(remoteAddress, service, load))
         return services
 
