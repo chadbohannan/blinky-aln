@@ -18,7 +18,9 @@ def main():
 
     port = server_sock.getsockname()[1]
 
-    uuid = "94f39d29-7d6d-437d-973b-fba39e49d4ee"
+    # uuid = "00001101-0000-1000-8000-00805F9B34FB" # serial adapter
+    # uuid = "94f39d29-7d6d-437d-973b-fba39e49d4ee" # rfcomm-client
+    uuid = "00001101-0000-1000-8000-10ca10ddba11" # blinky-bt
 
     bluetooth.advertise_service(server_sock, "AlnServer", service_id=uuid,
                                 service_classes=[uuid, bluetooth.SERIAL_PORT_CLASS],

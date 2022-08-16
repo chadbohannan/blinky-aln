@@ -11,6 +11,8 @@ import android.widget.BaseAdapter;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import biglittleidea.alnn.App;
@@ -18,18 +20,39 @@ import biglittleidea.alnn.R;
 
 public class BluetoothDiscoveryListAdapter extends BaseAdapter {
 
-    private static String serviceUUID = "94f39d29-7d6d-437d-973b-fba39e49d4ee";
+    private static HashMap<String, String> serviceUUIDs = new HashMap<>();
+
+
     private LayoutInflater inflter;
-    private List<BluetoothDevice> deviceList = new ArrayList<>();
+    private List<BluetoothService> deviceList = new ArrayList<>();
+
+    protected class BluetoothService {
+        protected BluetoothDevice device;
+        protected String uuid;
+        protected BluetoothService(BluetoothDevice device, String uuid) {
+            this.device = device;
+            this.uuid = uuid;
+        }
+        public String toString() {
+            return String.format("%s-%s", device.getAddress(), uuid);
+        }
+    }
 
     @SuppressLint("MissingPermission")
     public BluetoothDiscoveryListAdapter(List<BluetoothDevice> deviceList) {
+        serviceUUIDs.put("94f39d29-7d6d-437d-973b-fba39e49d4ee", "rfcomm-client");
+        serviceUUIDs.put("00001101-0000-1000-8000-10ca10ddba11", "blinky-bt");
+        serviceUUIDs.put("00001101-0000-1000-8000-00805F9B34FB", "serial adapter");
+
         inflter = LayoutInflater.from(App.getInstance());
         for (BluetoothDevice device : deviceList) {
             ParcelUuid[] uuids = device.getUuids();
             if (uuids == null)
                 continue;
-            this.deviceList.add(device);
+            for (ParcelUuid uuid : uuids) {
+                if (serviceUUIDs.containsKey(uuid.toString()))
+                this.deviceList.add(new BluetoothService(device, uuid.toString()));
+            }
         }
     }
 
@@ -39,26 +62,29 @@ public class BluetoothDiscoveryListAdapter extends BaseAdapter {
     }
 
     @Override
-    public BluetoothDevice getItem(int position) {
+    public BluetoothService getItem(int position) {
         return deviceList.get(position);
     }
 
     @Override
     public long getItemId(int position) {
-        return deviceList.get(position).getAddress().hashCode();
+        return deviceList.get(position).toString().hashCode();
     }
 
     @SuppressLint("MissingPermission")
     @Override
     public View getView(int position, View view, ViewGroup parent) {
         view = inflter.inflate(R.layout.bluetooth_discovery_item, null);
+
+        BluetoothService service = deviceList.get(position);
+        String addr = service.device.getAddress();
+        String name = service.device.getName();
+        String serv = serviceUUIDs.get(service.uuid);
+
         TextView nameText = view.findViewById(R.id.nameText);
-        BluetoothDevice device = deviceList.get(position);
-        String name = device.getName();
-        String addr = device.getAddress();
-        int len = device.getUuids().length;
-        nameText.setText(String.format("%s (%d) %s", name,  len, addr));
-        final boolean isConnected = App.getInstance().isConnected(device, serviceUUID);
+        nameText.setText(String.format("%s %s %s", addr, name, serv));
+
+        final boolean isConnected = App.getInstance().isConnected(service.device, service.uuid);
         if (isConnected) {
             view.findViewById(R.id.icon).setVisibility(View.VISIBLE);
         } else {
@@ -68,7 +94,7 @@ public class BluetoothDiscoveryListAdapter extends BaseAdapter {
             @Override
             public void onClick(View v) {
 
-                App.getInstance().connectTo(device, serviceUUID, !isConnected);
+                App.getInstance().connectTo(service.device, service.uuid, !isConnected);
             }
         });
 
