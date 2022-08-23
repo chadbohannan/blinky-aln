@@ -287,6 +287,28 @@ public class App extends Application {
         editor.apply();
     }
 
+    public void replaceActionItem(String service, String prevTitle, String prevContent, String title, String content) {
+        if (!actions.containsKey(service)) {
+            actions.put(service, new TreeSet<>());
+        }
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        Set<String> existingCheck = prefs.getStringSet(service, new TreeSet<>());
+        Log.d("ALNN", String.format("%d exist", existingCheck.size()));
+
+
+        actions.get(service).remove(String.format("%s\t%s", prevTitle, prevContent));
+        actions.get(service).add(String.format("%s\t%s", title, content));
+
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putStringSet(service, actions.get(service));
+        if (!services.contains(service)) {
+            services.add(service);
+            editor.putStringSet("__services", services);
+        }
+        editor.apply();
+    }
+
     private void loadServices() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
         services = prefs.getStringSet("__services", new TreeSet<>());
@@ -396,4 +418,6 @@ public class App extends Application {
         prefs.edit().putInt("__port_for_"+iface, port).apply();
         localInetInfo.setValue(localInetInfo.getValue());
     }
+
+
 }

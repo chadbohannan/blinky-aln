@@ -43,6 +43,8 @@ public class BluetoothDiscoveryListAdapter extends BaseAdapter {
         serviceUUIDs.put("94f39d29-7d6d-437d-973b-fba39e49d4ee", "rfcomm-client");
         serviceUUIDs.put("00001101-0000-1000-8000-10ca10ddba11", "blinky-bt");
         serviceUUIDs.put("00001101-0000-1000-8000-00805F9B34FB", "serial adapter");
+        serviceUUIDs.put("00001101-0000-1000-8000-00805f9b34fb", "serial adapter");
+
 
         inflter = LayoutInflater.from(App.getInstance());
         for (BluetoothDevice device : deviceList) {
@@ -51,7 +53,7 @@ public class BluetoothDiscoveryListAdapter extends BaseAdapter {
                 continue;
             for (ParcelUuid uuid : uuids) {
                 if (serviceUUIDs.containsKey(uuid.toString()))
-                this.deviceList.add(new BluetoothService(device, uuid.toString()));
+                    this.deviceList.add(new BluetoothService(device, uuid.toString()));
             }
         }
     }
