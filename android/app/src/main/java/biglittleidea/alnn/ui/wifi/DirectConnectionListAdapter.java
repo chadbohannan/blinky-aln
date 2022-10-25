@@ -18,9 +18,12 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.Observer;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import biglittleidea.alnn.App;
 import biglittleidea.alnn.R;
@@ -39,7 +42,6 @@ public class DirectConnectionListAdapter extends BaseAdapter {
         this.activity = activity;
         this.connectionList = connectionList;
         this.lifecycleOwner = lifecycleOwner;
-        dialog = makeAddConnectionDialog();
     }
 
     @Override
@@ -61,6 +63,7 @@ public class DirectConnectionListAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         final View view  = inflter.inflate(R.layout.saved_connection_item, null);
         ImageView icon = view.findViewById(R.id.icon);
+        ImageView trashIcon = view.findViewById(R.id.trash);
         TextView titleText = view.findViewById(R.id.titleTextView);
         TextView protocolText = view.findViewById(R.id.protocolTextView);
         TextView addressText = view.findViewById(R.id.addressTextView);
@@ -69,10 +72,26 @@ public class DirectConnectionListAdapter extends BaseAdapter {
         if (position < connectionList.length) {
             final DirectConnectionItem item = connectionList[position];
             icon.setImageResource(R.drawable.server_host);
+
             connectSwitch.setVisibility(View.VISIBLE);
+            switch(item.protocol){
+                case "tls+maln":
+                    protocolText.setText("Secure Multiplexed");
+                    break;
+                case "tcp+maln":
+                    protocolText.setText("Insecure Multiplexed");
+                    break;
+                case "tls+aln":
+                    protocolText.setText("Secure Direct");
+                    break;
+                case "tcp+aln":
+                    protocolText.setText("Insecure Direct");
+                    break;
+                default:
+                    protocolText.setText(item.title);
+            }
             titleText.setText(item.title);
-            protocolText.setText(item.protocol);
-            addressText.setText(String.format("%s:%d\n%s", item.host, item.port, item.node));
+            addressText.setText(String.format("%s://%s:%d\n%s", item.protocol, item.host, item.port, item.node));
 
             App app = App.getInstance();
             connectSwitch.setChecked(app.isConnected(item.protocol, item.host, item.port));
@@ -91,18 +110,30 @@ public class DirectConnectionListAdapter extends BaseAdapter {
                     connectSwitch.setChecked(app.isConnected(item.protocol, item.host, item.port));
                 }
             });
-
+            view.setOnClickListener(v -> {});
+            final String title = item.title;
+            final String content = item.content;
+            trashIcon.setOnClickListener(v -> {
+                new AlertDialog.Builder(activity)
+                        .setTitle("Remove Connection")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                App.getInstance().removeDirectConnection(content);
+                            }
+                        }).show();
+            });
         } else {
             titleText.setText("");
             protocolText.setText("Add New Remote Connection");
             addressText.setText("");
             icon.setImageResource(R.drawable.icons8_plus);
             connectSwitch.setVisibility(View.INVISIBLE);
-
+            trashIcon.setVisibility(View.GONE);
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    dialog.show();
+                    makeAddConnectionDialog().show();
                 }
             });
         }

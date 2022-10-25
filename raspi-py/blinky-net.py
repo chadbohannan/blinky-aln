@@ -11,6 +11,17 @@ def main():
     router = Router(sel, "python-client-1") # TODO dynamic address allocation protocol
     router.start()
 
+    def on_chat(packet):
+        print('chat: ' + packet.data.decode('utf-8'))
+    router.register_service("chat", on_chat)
+    
+    def on_led_control(packet):
+        # import pdb; pdb.set_trace()
+        data = bytearray(packet.data).decode('utf-8')
+        print('led control: ' + data)
+
+    router.register_service("8x8_led_control", on_led_control)
+
     s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind(('', 8282))
     while True:
@@ -37,17 +48,6 @@ def main():
     
     print('parsed host:', protocol, host, port, malnAddr)
     
-
-    def on_chat(packet):
-        print('chat: ' + packet.data.decode('utf-8'))
-    router.register_service("chat", on_chat)
-    
-    def on_led_control(packet):
-        # import pdb; pdb.set_trace()
-        data = bytearray(packet.data).decode('utf-8')
-        print('led control: ' + data)
-
-    router.register_service("8x8_led_control", on_led_control)
 
     # connect to an existing node in the network
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

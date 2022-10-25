@@ -1,5 +1,7 @@
 package biglittleidea.aln;
 
+import android.util.Log;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.zip.CRC32;
@@ -223,7 +225,7 @@ public class Packet {
             int crcCalc = CRC32(pData, 0, offset);
             if (crcPacket != crcCalc) {
                 // TODO error handling
-                System.out.printf("CRC error, %x != %x\n", crcPacket, crcCalc);
+                Log.d("ALNN", String.format("CRC error, %x != %x\n", crcPacket, crcCalc));
                 CRC = -1;
             } else {
                 CRC = crcPacket;

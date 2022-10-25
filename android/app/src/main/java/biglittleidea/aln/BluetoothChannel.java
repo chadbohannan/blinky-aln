@@ -1,50 +1,45 @@
 package biglittleidea.aln;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothSocket;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.RequiresApi;
+import androidx.core.app.ActivityCompat;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousSocketChannel;
-import java.nio.channels.CompletionHandler;
-import java.nio.channels.SocketChannel;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
-import biglittleidea.alnn.App;
-
-public class TcpChannel implements IChannel {
-    SocketChannel socket;
+public class BluetoothChannel implements IChannel {
+    BluetoothSocket socket;
     BlockingQueue<Packet> sendQueue = new LinkedBlockingQueue<Packet>(10);
     Thread sendThread = null;
-    public TcpChannel(String host, int port) {
+
+    public BluetoothChannel(BluetoothSocket socket) {
+        this.socket = socket;
         try {
-            InetSocketAddress hostAddress = new InetSocketAddress(host, port);
-            socket = SocketChannel.open();
             sendThread = new Thread(new Runnable() {
+                @SuppressLint("MissingPermission")
                 @Override
                 public void run() {
+                    nap(70);
                     try {
-                        socket.connect(hostAddress); // block until connection is made
+                        socket.connect();
                     } catch (IOException e) {
                         e.printStackTrace();
-                        return;
                     }
                     while(true) {
-                        Packet p = null;
                         try {
-                            p = sendQueue.take();
+                            Packet p = sendQueue.take();
                             if (p.Net == 0 && p.DestAddress == null && p.Service == null) {
                                 socket.close();
                                 break;
                             }
-                            byte[] frame = p.toFrameBuffer();
-                            socket.write(ByteBuffer.wrap(frame));
+                            socket.getOutputStream().write(p.toFrameBuffer());
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                             break;
@@ -65,45 +60,47 @@ public class TcpChannel implements IChannel {
         sendQueue.offer(p);
     }
 
+    private void nap(int t){
+        try { Thread.sleep(t);}
+        catch (InterruptedException e) { }
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.O)
     public void receive(IPacketHandler packetHandler, IChannelCloseHandler closeHandler) {
         Parser parser = new Parser(packetHandler);
-        if (socket != null && socket.isOpen()) {
+        if (socket != null) {
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    while(socket.isOpen()) {
+                    while(true) {
                         if (!socket.isConnected()) {
-                            try {
-                                Thread.sleep(100);
-                            } catch (InterruptedException e) {
-                                break;
-                            }
+                            nap(100);
                             continue;
                         }
-                        ByteBuffer[] buffer = new ByteBuffer[]{ByteBuffer.allocate(1)};
+                        byte[] buffer = new byte[]{0};
                         try {
-                            long n = socket.read(buffer, 0, 1);
+                            long n = socket.getInputStream().read(buffer, 0, 1);
                             if (n == 0) {
                                 break;
                             }
-                            parser.readAx25FrameBytes(buffer[0].array(), (int)n);
-                            buffer[0].flip();
+                            parser.readAx25FrameBytes(buffer, (int)n);
                         } catch (IOException e) {
                             e.printStackTrace();
                             break;
                         }
                     }
                     if (closeHandler != null)
-                        closeHandler.onChannelClosed(TcpChannel.this);
+                        closeHandler.onChannelClosed(BluetoothChannel.this);
                 }
             });
             t.start();
+        } else {
+            Log.e("ALNN", "receive is bailing without starting");
         }
     }
 
     public void close() {
-        if (socket == null || !socket.isOpen()) {
+        if (socket == null || !socket.isConnected()) {
             return;
         }
         try {
