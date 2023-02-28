@@ -42,7 +42,7 @@
             android:textSize="10pt"
             android:background="@color/light_gray"
             android:textColor="@color/black"
-            android:text="Discovered"/>
+            android:text="Discovered Hosts"/>
         <ListView
             android:id="@+id/discovery_list_view"
             android:layout_width="match_parent"
@@ -60,7 +60,7 @@
             android:textSize="10pt"
             android:background="@color/light_gray"
             android:textColor="@color/black"
-            android:text="Direct Connections"/>
+            android:text="Connections"/>
         <ListView
             android:id="@+id/direct_list_view"
             android:layout_width="match_parent"

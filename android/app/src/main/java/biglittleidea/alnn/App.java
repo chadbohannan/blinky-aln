@@ -59,6 +59,7 @@ public class App extends Application {
     TreeMap<String, Set<String>> actions = new TreeMap<>();
     TreeSet<String> connections = new TreeSet();
 
+    // url to channel; not great as it assumes at most one channel to a single url
     HashMap<String, IChannel> channelMap = new HashMap<>();
     Router alnRouter;
 
@@ -407,17 +408,39 @@ public class App extends Application {
         bluetoothDiscoveryIsActive.setValue(true);
     }
 
-    public short getNetListenPortForInterface(String iface) {
+    public short getUdpAdvertPortForInterface(String iface) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
-        int port = prefs.getInt("__port_for_"+iface, 8082);
+        int port = prefs.getInt("__udp_advert_port_for_"+iface, 8082);
         return (short)port;
     }
 
-    public void setNetListenPortForInterface(String iface, short port) {
+    public void setUdpAdvertPortForInterface(String iface, short port) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
-        prefs.edit().putInt("__port_for_"+iface, port).apply();
+        prefs.edit().putInt("__udp_advert_port_for_"+iface, port).apply();
+        localInetInfo.setValue(localInetInfo.getValue());
+    }
+
+    public short getTcpHostPortForInterface(String iface) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        int port = prefs.getInt("__tcp_host_port_for_"+iface, 8081);
+        return (short)port;
+    }
+
+    public void setTcpHostPortForInterface(String iface, short port) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        prefs.edit().putInt("__tcp_host_port_for_"+iface, port).apply();
         localInetInfo.setValue(localInetInfo.getValue());
     }
 
 
+    public boolean getActAsHostForInterface(String iface) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        return prefs.getBoolean("__act_as_host_for_"+iface, false);
+    }
+
+    public void setActAsHostForInterface(String iface, boolean actAsHost) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        prefs.edit().putBoolean("__act_as_host_for_"+iface, actAsHost).apply();
+        localInetInfo.setValue(localInetInfo.getValue());
+    }
 }

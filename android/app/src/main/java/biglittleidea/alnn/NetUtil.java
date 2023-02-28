@@ -60,13 +60,20 @@ public class NetUtil {
 
     public static BeaconInfo beaconInfoFromUri(String uri) {
         String[] parts = uri.split("://");
+        short port = 0;
+        if (parts.length != 2) {
+            return new BeaconInfo("err", "invalid url", port, "");
+        }
         String protocol = parts[0];
         parts = parts[1].split(":");
         String host = parts[0];
+        if (parts.length != 2) {
+            return new BeaconInfo(protocol, host, port, "");
+        }
         parts = parts[1].split("/");
-        short port = Short.parseShort(parts[0]);
+        port = Short.parseShort(parts[0]);
         String path = "";
-        if (parts.length > 0)
+        if (parts.length > 1)
             path = parts[1];
         return new BeaconInfo(protocol, host, port, path);
     }

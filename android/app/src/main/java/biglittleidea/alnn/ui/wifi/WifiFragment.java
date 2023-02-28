@@ -46,7 +46,7 @@ public class WifiFragment extends Fragment {
             interfaceListView.setAdapter(new LocalNetInfoListAdapter(getActivity(), lco, localInetInfos));
             ViewGroup.LayoutParams params = interfaceListView.getLayoutParams();
 
-            float dip = 91f;
+            float dip = 225f; // height of view
             Resources r = getResources();
             int px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dip, r.getDisplayMetrics());
 
