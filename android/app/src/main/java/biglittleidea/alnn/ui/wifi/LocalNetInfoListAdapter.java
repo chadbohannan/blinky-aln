@@ -80,17 +80,16 @@ public class LocalNetInfoListAdapter extends BaseAdapter {
             }
         });
 
+        // TCP Listen
         short tcpHostPort = app.getTcpHostPortForInterface(iface);
-        Switch tcpToggle = view.findViewById(R.id.tcp_listen_switch);
-        tcpToggle.setChecked(app.isListeningToUDP(info.bcastAddress, tcpHostPort));
-        tcpToggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        Switch tcpListenSwitch = view.findViewById(R.id.tcp_listen_switch);
+        tcpListenSwitch.setChecked(app.isListeningToTCP(info.inetAddress, tcpHostPort));
+        tcpListenSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                short port = app.getUdpAdvertPortForInterface(iface);
-                app.listenToUDP(info.bcastAddress, port, isChecked);
+                app.listenToTCP(info.inetAddress, tcpHostPort, isChecked);
             }
         });
-
         TextView tcpPortText = view.findViewById(R.id.tcp_port_view);
         tcpPortText.setText(String.format("port %d", tcpHostPort));
         tcpPortText.setOnClickListener(new View.OnClickListener() {
@@ -109,6 +108,17 @@ public class LocalNetInfoListAdapter extends BaseAdapter {
             }
         });
 
+        // UDP advertisement
+        short udpBcastPort = app.getUdpAdvertPortForInterface(iface);
+        Switch udpBroadcastSwitch = view.findViewById(R.id.udp_advertise_switch);
+        udpBroadcastSwitch.setChecked(app.isBroadcastingUDP(info.bcastAddress, udpBcastPort));
+        udpBroadcastSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                String message = String.format("tcp+aln:/%s:%d", info.inetAddress, tcpHostPort);
+                app.broadcastUDP(info.bcastAddress, udpBcastPort, message, isChecked);
+            }
+        });
         short udpAdvertPort = app.getUdpAdvertPortForInterface(iface);
         TextView udpAdvertPortText = view.findViewById(R.id.udp_advertise_port_view);
         udpAdvertPortText.setText(String.format("port %d", udpAdvertPort));
@@ -132,7 +142,7 @@ public class LocalNetInfoListAdapter extends BaseAdapter {
 
         // act as client
         short udpListenPort = app.getUdpAdvertPortForInterface(iface);
-        Switch udpToggle = view.findViewById(R.id.udp_advertise_switch);
+        Switch udpToggle = view.findViewById(R.id.udp_listen_switch);
         udpToggle.setChecked(app.isListeningToUDP(info.bcastAddress, udpListenPort));
         udpToggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -141,25 +151,14 @@ public class LocalNetInfoListAdapter extends BaseAdapter {
                 app.listenToUDP(info.bcastAddress, port, isChecked);
             }
         });
-
         TextView udpListenPortText = view.findViewById(R.id.udp_listen_port_view);
         udpListenPortText.setText(String.format("port %d", udpAdvertPort));
         udpListenPortText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String broadcastListenHtml =
-                    "The local wifi network has a broadcast address that allows " +
-                    "ALN components to broadcast advertisements of their available " +
-                    "connections. This app can listen for those broadcasts and parse "+
-                    "their content. If the content contains a supported " +
-                    "<a href=\"\">ALN connection protocol</a> then it will appear in the " +
-                    "Discovered Hosts section.\n\n" +
-                    "Use the Discovered Hosts interface to create a connection.";
                 makeSetPortDialog("iface", "udp_listen").show();
             }
         });
-
-
         view.findViewById(R.id.help_udp_listen).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -183,6 +182,13 @@ public class LocalNetInfoListAdapter extends BaseAdapter {
         View view = inflater.inflate(R.layout.set_listen_port_dialog, null);
         dialog.setContentView(view);
         dialog.setTitle("Configuration");
+
+        TextView titleView = view.findViewById(R.id.titleLabel);
+        if (portType == "udp_advert") {
+            titleView.setText("Broadcast on port");
+        } else {
+            titleView.setText("Listen on port");
+        }
 
         App app = App.getInstance();
         short port;

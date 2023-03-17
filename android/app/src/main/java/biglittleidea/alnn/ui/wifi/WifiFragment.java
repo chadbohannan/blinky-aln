@@ -1,7 +1,5 @@
 package biglittleidea.alnn.ui.wifi;
 
-import android.app.Activity;
-import android.app.Dialog;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.util.TypedValue;
@@ -9,7 +7,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -24,11 +21,11 @@ public class WifiFragment extends Fragment {
 
     private FragmentWifiBinding binding;
 
-    DirectConnectionItem[] composeDirectConnectionList(Set<String> set) {
-        DirectConnectionItem[] array = new DirectConnectionItem[set.size()];
+    StoredConnectionItem[] composeDirectConnectionList(Set<String> set) {
+        StoredConnectionItem[] array = new StoredConnectionItem[set.size()];
         int i = 0;
         for (String value : set) {
-            array[i++] = new DirectConnectionItem(value);
+            array[i++] = new StoredConnectionItem(value);
         }
         return array;
     }
@@ -39,7 +36,8 @@ public class WifiFragment extends Fragment {
         binding = FragmentWifiBinding.inflate(inflater, container, false);
         final ListView interfaceListView = binding.interfaceListView;
         final ListView discoveryListView = binding.discoveryListView;
-        final ListView directListView = binding.directListView;
+        final ListView connectionsListView = binding.connectionsListView;
+        final ListView storedConnectionsListView = binding.savedConnectionsListView;
 
         app.localInetInfo.observe(getViewLifecycleOwner(), localInetInfos -> {
             LifecycleOwner lco = getViewLifecycleOwner();
@@ -68,19 +66,32 @@ public class WifiFragment extends Fragment {
             discoveryListView.requestLayout();
         });
 
-        app.directConnections.observe(getViewLifecycleOwner(), connectionList -> {
-            DirectConnectionItem[] array = composeDirectConnectionList(connectionList);
-            DirectConnectionListAdapter adapter = new DirectConnectionListAdapter(getActivity(), array, getViewLifecycleOwner());
-            directListView.setAdapter(adapter);
+        app.activeConnections.observe(getViewLifecycleOwner(), connections -> {
+            connectionsListView.setAdapter(new ActiveConnectionListAdapter(app, connections, getViewLifecycleOwner()));
+            ViewGroup.LayoutParams params = connectionsListView.getLayoutParams();
+
+            float dip = 91f;
+            Resources r = getResources();
+            int px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dip, r.getDisplayMetrics());
+
+            params.height = px * connections.size();
+            connectionsListView.setLayoutParams(params);
+            connectionsListView.requestLayout();
+        });
+
+        app.storedConnections.observe(getViewLifecycleOwner(), connectionList -> {
+            StoredConnectionItem[] array = composeDirectConnectionList(connectionList);
+            StoredConnectionListAdapter adapter = new StoredConnectionListAdapter(getActivity(), array, getViewLifecycleOwner());
+            storedConnectionsListView.setAdapter(adapter);
 
             float dip = 121f;
             Resources r = getResources();
             int px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dip, r.getDisplayMetrics());
 
-            ViewGroup.LayoutParams params = directListView.getLayoutParams();
+            ViewGroup.LayoutParams params = storedConnectionsListView.getLayoutParams();
             params.height = px * (adapter.getCount());
-            directListView.setLayoutParams(params);
-            directListView.requestLayout();
+            storedConnectionsListView.setLayoutParams(params);
+            storedConnectionsListView.requestLayout();
         });
 
         return binding.getRoot();

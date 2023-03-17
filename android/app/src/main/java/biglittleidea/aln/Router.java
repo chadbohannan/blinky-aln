@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,6 +67,16 @@ public class Router {
     protected String address = "";
     ArrayList<IChannel> channels = new ArrayList<>();
     HashMap<String, ArrayList<Packet>> serviceQueue = new HashMap<String, ArrayList<Packet>>(); // packets waiting for services during warmup
+
+    public Set<IChannel> getChannelSet() {
+        HashSet<IChannel> channelSet = new HashSet<>();
+        synchronized (this) {
+            for (int i = 0; i < channels.size(); i++) {
+                channelSet.add(channels.get(i));
+            }
+        }
+        return channelSet;
+    }
 
     public void setOnStateChangedListener(OnStateChangedListener listener) {
         onStateChangedListener = listener;

@@ -17,14 +17,21 @@ import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 import androidx.lifecycle.MutableLiveData;
 
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +53,9 @@ public class App extends Application {
     public final MutableLiveData<List<LocalInetInfo>> localInetInfo = new MutableLiveData<>();
     public final MutableLiveData<List<BeaconInfo>> beaconInfo = new MutableLiveData<>();
     public final MutableLiveData<Map<String, Router.NodeInfoItem>> nodeInfo = new MutableLiveData<>();
-    public final MutableLiveData<Set<String>> directConnections = new MutableLiveData<>();
+
+    public final MutableLiveData<List<String>> activeConnections = new MutableLiveData<>();
+    public final MutableLiveData<Set<String>> storedConnections = new MutableLiveData<>();
     public final MutableLiveData<Integer> numActiveConnections = new MutableLiveData<>();
     public final MutableLiveData<List<BluetoothDevice>> bluetoothDevices = new MutableLiveData<>();
     public final MutableLiveData<String> bluetoothDiscoveryStatus = new MutableLiveData<>();
@@ -54,6 +63,12 @@ public class App extends Application {
 
     public final MutableLiveData<String> qrDialogLabel = new MutableLiveData<>();
     public final MutableLiveData<String> qrScanResult = new MutableLiveData<>();
+
+
+    HashMap<String, UDPListener> bcastListenMap = new HashMap<>();
+    HashMap<String, ServerSocketChannel> serverSocketChannelMap = new HashMap<>();
+
+    TreeMap<String, IChannel> connectedChannels = new TreeMap<>();
 
     Set<String> services;
     TreeMap<String, Set<String>> actions = new TreeMap<>();
@@ -77,13 +92,21 @@ public class App extends Application {
         localInetInfo.setValue(NetUtil.getLocalInetInfo());
     }
 
+    private void updateActiveChannels() {
+        ArrayList<String> keys = new ArrayList<>();
+        for (String k : connectedChannels.keySet()) {
+            keys.add(k);
+        }
+        activeConnections.postValue(keys);
+    }
+
     @Override
     public void onCreate() {
         instance = this;
         super.onCreate();
 
         loadServices();
-        loadDirectConnections();
+        loadSavedConnections();
         numActiveConnections.setValue(0);
         bluetoothDiscoveryIsActive.setValue(false);
         bluetoothDevices.setValue(new ArrayList<>());
@@ -122,6 +145,19 @@ public class App extends Application {
             @Override
             public void onStateChanged() {
                 nodeInfo.postValue(alnRouter.availableServices());
+
+                // clear closed connections from activeConnections
+                Set<String> removeSet = new HashSet<>();
+                Set<IChannel> channelSet = alnRouter.getChannelSet();
+                for (String key : connectedChannels.keySet()) {
+                    if (!channelSet.contains(connectedChannels.get(key))) {
+                        removeSet.add(key);
+                    }
+                }
+                for (String key : removeSet) {
+                    connectedChannels.remove(key);
+                }
+                updateActiveChannels();
             }
         });
     }
@@ -166,6 +202,7 @@ public class App extends Application {
                 return;
             }
             if (listen && !listener.isRunning()) {
+                Log.d("ALNN", "listening");
                 listener = makeListener(bcastAddress, port);
                 listener.start();
                 bcastListenMap.put(path, listener);
@@ -175,8 +212,6 @@ public class App extends Application {
             localInetInfo.setValue(localInetInfo.getValue()); // trigger observers
         }
     }
-
-    HashMap<String, UDPListener> bcastListenMap = new HashMap<>();
 
     public boolean isListeningToUDP(InetAddress bcastAddress, short port) {
         String path = String.format("%s:%d", bcastAddress.toString(), port);
@@ -188,7 +223,100 @@ public class App extends Application {
         }
     }
 
-    @SuppressLint("MissingPermission")
+    public void listenToTCP(InetAddress listenAddress, short port, boolean listen) {
+        Log.d("ALNN", "listenToTCP");
+        String key = String.format("%s:%d", listenAddress.toString(), port);
+
+        if (listen == false) {
+            // stop the server thread
+            if (serverSocketChannelMap.containsKey(key)) {
+                try {
+                    serverSocketChannelMap.get(key).close();
+                } catch (IOException e) {
+                    Log.e("ALNN", "error stopping thread:" + e.getLocalizedMessage());
+                    // throw new RuntimeException(e);
+                }
+                serverSocketChannelMap.remove(key);
+            }
+            return;
+        }
+
+        ServerSocketChannel ssc;
+        try {
+            ssc = ServerSocketChannel.open();
+            ssc.socket().bind(new InetSocketAddress(listenAddress, port));
+        } catch (IOException e) {
+            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT);
+            return;
+        }
+        serverSocketChannelMap.put(key, ssc);
+
+        new Thread(() -> {
+            try {
+                Log.d("ALNN", String.format("listening to %s:%d", listenAddress, port));
+                while(true) {
+                    SocketChannel clientSocket = ssc.accept();
+                    String remoteHost = clientSocket.socket().getRemoteSocketAddress().toString();
+                    int localPort = clientSocket.socket().getLocalPort();
+                    Log.d("ALNN", String.format("accepting connection from %s:%d", remoteHost, localPort));
+                    IChannel ch = new TcpChannel(clientSocket);
+                    getInstance().alnRouter.addChannel(ch);
+                    getInstance().channelMap.put(remoteHost, ch);
+                    connectedChannels.put(remoteHost, ch);
+                    updateActiveChannels();
+                }
+            } catch (IOException e) { }
+        }).start();
+    }
+
+    public boolean isListeningToTCP(InetAddress listenAddress, short port) {
+        String key = String.format("%s:%d", listenAddress.toString(), port);
+        return serverSocketChannelMap.containsKey(key);
+    }
+
+    HashMap<String, Thread> broadcastUDPThreadMap = new HashMap<>();
+    public void broadcastUDP(InetAddress bcastAddress, short port, String message, boolean enable) {
+        String key = String.format("%s:%d", bcastAddress, port);
+        Log.d("ALNN", "broadcastUDP - TODO");
+        if (!enable) {
+            if (broadcastUDPThreadMap.containsKey(key)) {
+                try {
+                    broadcastUDPThreadMap.get(key).stop();
+                } catch (Exception e) { /* don't care */ }
+                broadcastUDPThreadMap.remove(key);
+            }
+            return;
+        }
+        if (broadcastUDPThreadMap.containsKey(key))
+            return; // do nothing if it's already running
+        Thread newAdvertiserThread = new Thread(() -> {
+            while(true) {
+                try {
+                    Thread.sleep(2000);
+                    DatagramSocket socket = new DatagramSocket();
+                    socket.setBroadcast(true);
+                    byte[] sendData = message.getBytes();
+                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, bcastAddress, port);
+                    socket.send(sendPacket);
+                } catch (IOException e) {
+                    Log.e("ALNN", "IOException: " + e.getMessage());
+                    break;
+                } catch (Exception e) {
+                    Log.e("ALNN", "Exception: " + e.getMessage());
+                    break;
+                }
+            }
+        });
+        newAdvertiserThread.start();
+        broadcastUDPThreadMap.put(key, newAdvertiserThread);
+    }
+
+    public boolean isBroadcastingUDP(InetAddress bcastAddress, short port) {
+        String key = String.format("%s:%d", bcastAddress, port);
+        return broadcastUDPThreadMap.containsKey(key);
+    }
+
+        @SuppressLint("MissingPermission")
     public String connectTo(BluetoothDevice device, String serviceUuid, boolean enable) {
         String path = String.format("%s:%s", device.getAddress(), serviceUuid);
         if (enable) {
@@ -268,6 +396,15 @@ public class App extends Application {
         }
     }
 
+    public void disconnectActiveConnection(String key) {
+        IChannel ch = connectedChannels.get(key);
+        if (ch != null) {
+            connectedChannels.remove(key);
+            ch.close();
+        }
+        updateActiveChannels();
+    }
+
     public void saveActionItem(String service, String title, String content) {
         if (!actions.containsKey(service)) {
             actions.put(service, new TreeSet<>());
@@ -326,17 +463,17 @@ public class App extends Application {
         return actions.get(service);
     }
 
-    private void loadDirectConnections() {
+    private void loadSavedConnections() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
         Set<String> storedConns = prefs.getStringSet("__connections", new TreeSet<>());
 
         for (String connection : storedConns) {
             connections.add(connection);
         }
-        directConnections.postValue(connections);
+        storedConnections.postValue(connections);
     }
 
-    public void saveDirectConnection(String title, String url) {
+    public void saveConnection(String title, String url) {
         if ((title.length() + url.length()) == 0)
             return;
 
@@ -345,10 +482,10 @@ public class App extends Application {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
         prefs.edit().putStringSet("__connections", connections).apply();
 
-        directConnections.postValue(connections);
+        storedConnections.postValue(connections);
     }
 
-    public void removeDirectConnection(String content) {
+    public void forgetConnection(String content) {
         TreeSet<String> newConnections = new TreeSet();
         for (String connection : connections) {
             if (!connection.equals(content)) {
@@ -359,7 +496,7 @@ public class App extends Application {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
         prefs.edit().putStringSet("__connections", connections).apply();
 
-        directConnections.postValue(connections);
+        storedConnections.postValue(connections);
     }
 
     public void toggleBluetoothDiscovery() {
