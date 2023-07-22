@@ -19,19 +19,15 @@ public class MeshFragment extends Fragment {
     private FragmentMeshBinding binding;
     Map<String, Router.NodeInfoItem> nodeInfo;
 
-    void resetAdapters(ListView listView) {
-        listView.setAdapter(new NodeListAdapter(getActivity(), nodeInfo));
-    }
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         App app = App.getInstance();
         binding = FragmentMeshBinding.inflate(inflater, container, false);
-        final ListView listView = binding.listView;
-
+        binding.localAddress.setText(app.alnRouter.getAddress());
         app.nodeInfo.observe(getViewLifecycleOwner(), nodeInfos -> {
             nodeInfo = nodeInfos;
-            resetAdapters(listView);
+            binding.listView.setAdapter(new NodeListAdapter(getActivity(), nodeInfo));
         });
         return binding.getRoot();
     }

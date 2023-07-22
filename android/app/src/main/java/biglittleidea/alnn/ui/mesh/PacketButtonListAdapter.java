@@ -21,7 +21,7 @@ public class PacketButtonListAdapter extends RecyclerView.Adapter<PacketButtonLi
 
     private Activity activity;
     private String service;
-    private NodeActionItem[] data;
+    private SendPacketActionItem[] data;
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         private final View view;
@@ -39,7 +39,7 @@ public class PacketButtonListAdapter extends RecyclerView.Adapter<PacketButtonLi
         }
     }
 
-    public PacketButtonListAdapter(Activity activity, String service, NodeActionItem[] data) {
+    public PacketButtonListAdapter(Activity activity, String service, SendPacketActionItem[] data) {
         this.activity = activity;
         this.service = service;
         this.data = data;
@@ -55,11 +55,11 @@ public class PacketButtonListAdapter extends RecyclerView.Adapter<PacketButtonLi
 
     @Override // Replace the contents of a view (invoked by the layout manager)
     public void onBindViewHolder(ViewHolder viewHolder, final int position) {
-
         if (position >= data.length) {
             viewHolder.getImageView().setImageResource(R.drawable.icons8_plus);
+            viewHolder.getTextView().setText("New Packet Button");
         } else {
-            NodeActionItem item = data[position];
+            SendPacketActionItem item = data[position];
             String text = item.title;
             int imgResource = R.drawable.packet;
             int bgColor = 0;
@@ -121,7 +121,7 @@ public class PacketButtonListAdapter extends RecyclerView.Adapter<PacketButtonLi
                     });
                     dialog.show();
                 } else { // send packet as action
-                    NodeActionItem item = PacketButtonListAdapter.this.data[position];
+                    SendPacketActionItem item = PacketButtonListAdapter.this.data[position];
                     Packet p = new Packet();
                     p.DestAddress = item.address;
                     p.Service = item.service;
@@ -138,7 +138,7 @@ public class PacketButtonListAdapter extends RecyclerView.Adapter<PacketButtonLi
             @Override
             public boolean onLongClick(View v) {
                 if (position < PacketButtonListAdapter.this.data.length) {
-                    NodeActionItem item = PacketButtonListAdapter.this.data[position];
+                    SendPacketActionItem item = PacketButtonListAdapter.this.data[position];
                     Dialog dialog  = makeButtonEditDialog(position);
                     ((TextView)dialog.findViewById(R.id.titleEdit)).setText(item.title);
                     ((TextView)dialog.findViewById(R.id.contentEdit)).setText(item.action);

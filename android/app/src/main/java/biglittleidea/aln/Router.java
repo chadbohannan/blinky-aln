@@ -63,9 +63,13 @@ public class Router {
     HashMap<String, HashMap<String, NodeLoad>> serviceLoadMap = new HashMap<String, HashMap<String, NodeLoad>>();
 
     // Router manages a set of channels and packet handlers
-    protected String address = "";
+     String address = "";
     ArrayList<IChannel> channels = new ArrayList<>();
     HashMap<String, ArrayList<Packet>> serviceQueue = new HashMap<String, ArrayList<Packet>>(); // packets waiting for services during warmup
+
+    public String getAddress() {
+        return this.address;
+    }
 
     public void setOnStateChangedListener(OnStateChangedListener listener) {
         onStateChangedListener = listener;
@@ -428,12 +432,12 @@ public class Router {
     }
 
     public void unregisterService(String service) {
+        // TODO bcast a service zero packet
         synchronized (this) {
             serviceHandlerMap.remove(service);
         }
         notifyListeners();
     }
-
 
     public class ServiceListItem implements java.lang.Comparable{
         public String service;
@@ -453,19 +457,23 @@ public class Router {
         public String address;
         public int distance;
         public Set<ServiceListItem> services = new TreeSet<>();
+        public NodeInfoItem(String address, int distance) {
+            this.address = address;
+            this.distance = distance;
+        }
     }
 
     public Map<String, NodeInfoItem> availableServices() {
         TreeMap<String, NodeInfoItem> addressMap = new TreeMap<>();
         synchronized (this) {
+            // initialize addressMap with remote nodes
             for (String address : remoteNodeMap.keySet()) {
                 RemoteNodeInfo info = remoteNodeMap.get(address);
-                NodeInfoItem item = new NodeInfoItem();
-                item.address = address;
-                item.distance = info.cost;
+                NodeInfoItem item = new NodeInfoItem(address, info.cost);
                 addressMap.put(address, item);
             }
 
+            // update the address map with service
             for (String service : serviceLoadMap.keySet()) {
                 HashMap<String, NodeLoad> addressLoadMap = serviceLoadMap.get(service);
                 for (String address : addressLoadMap.keySet()) {
@@ -474,6 +482,11 @@ public class Router {
                         addressMap.get(address).services.add(new ServiceListItem(service, nodeLoad.Load));
                     }
                 }
+            }
+            for (String service: serviceHandlerMap.keySet()) {
+                NodeInfoItem item = new NodeInfoItem(address, 1);
+                item.services.add(new ServiceListItem(service, (short)1));
+                addressMap.put(address, item);
             }
         }
         return addressMap;
@@ -529,5 +542,4 @@ public class Router {
             return channels.size();
         }
     }
-
 }

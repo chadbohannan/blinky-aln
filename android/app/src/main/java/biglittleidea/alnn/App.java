@@ -34,6 +34,7 @@ import java.util.UUID;
 
 import biglittleidea.aln.BluetoothChannel;
 import biglittleidea.aln.IChannel;
+import biglittleidea.aln.IPacketHandler;
 import biglittleidea.aln.Router;
 import biglittleidea.aln.TcpChannel;
 import biglittleidea.aln.Packet;
@@ -41,6 +42,9 @@ import biglittleidea.aln.TlsChannel;
 
 public class App extends Application {
     private static App instance;
+
+    List<LocalServiceHandler> localServices = new ArrayList<>();
+    public final MutableLiveData<List<LocalServiceHandler>> mdlLocalServices = new MutableLiveData<>();
 
     private final MutableLiveData<Boolean> isWifiConnected = new MutableLiveData<>();
     public final MutableLiveData<List<LocalInetInfo>> localInetInfo = new MutableLiveData<>();
@@ -60,7 +64,7 @@ public class App extends Application {
     TreeSet<String> connections = new TreeSet();
 
     HashMap<String, IChannel> channelMap = new HashMap<>();
-    Router alnRouter;
+    public Router alnRouter;
 
     BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -96,6 +100,13 @@ public class App extends Application {
             localAddress = addr;
         }
         alnRouter = new Router(localAddress);
+
+        // IN DEV
+        LocalServiceHandler logLSH = new LocalServiceHandler("log");
+        alnRouter.registerService(logLSH.service, logLSH);
+        localServices.add(logLSH);
+        mdlLocalServices.setValue(localServices);
+        nodeInfo.setValue(alnRouter.availableServices());
 
         updateWifi();
 
