@@ -16,6 +16,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.List;
 
+import biglittleidea.alnn.App;
 import biglittleidea.alnn.LocalServiceHandler;
 import biglittleidea.alnn.R;
 
@@ -69,9 +70,8 @@ public class LocalServiceListAdapter extends BaseAdapter {
                     .setCancelable(true)
                     .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
-                            // TODO implement delete
-                            String msg = "TODO stop service";
-                            Toast.makeText(activity.getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+                            App.getInstance().removeLocalService(info.service);
+                            Toast.makeText(activity.getApplicationContext(), "stopping service", Toast.LENGTH_SHORT).show();
                         }
                     })
                     .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
