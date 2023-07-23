@@ -86,7 +86,7 @@ public class PacketButtonListAdapter extends RecyclerView.Adapter<PacketButtonLi
     private Dialog makeButtonEditDialog(int position) {
         final Dialog dialog = new Dialog(activity);
 
-        dialog.setContentView(R.layout.add_service_action_dialog);
+        dialog.setContentView(R.layout.add_packet_button_dialog);
         dialog.setTitle("Position" + position);
         dialog.setCancelable(true);
         dialog.findViewById(R.id.cancel_button).setOnClickListener(new View.OnClickListener() {
