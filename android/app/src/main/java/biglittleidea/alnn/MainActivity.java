@@ -30,9 +30,10 @@ public class MainActivity extends AppCompatActivity {
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
+                R.id.navigation_mesh,
+                R.id.navigation_services,
                 R.id.navigation_wifi,
-                R.id.navigation_bluetooth,
-                R.id.navigation_mesh)
+                R.id.navigation_bluetooth)
                 .build();
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_main);
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
@@ -62,10 +63,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 0) {
-
             if (resultCode == RESULT_OK) {
                 App.getInstance().qrScanResult.postValue(data.getStringExtra("SCAN_RESULT"));
-
             }
             if(resultCode == RESULT_CANCELED){
                 //handle cancel

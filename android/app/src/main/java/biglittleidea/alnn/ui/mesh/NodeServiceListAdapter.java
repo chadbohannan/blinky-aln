@@ -1,13 +1,10 @@
 package biglittleidea.alnn.ui.mesh;
 
 import android.app.Activity;
-import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.CompoundButton;
-import android.widget.Switch;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -19,7 +16,6 @@ import java.util.Set;
 
 import biglittleidea.aln.Router;
 import biglittleidea.alnn.App;
-import biglittleidea.alnn.LocalInetInfo;
 import biglittleidea.alnn.R;
 
 public class NodeServiceListAdapter extends BaseAdapter {
@@ -57,21 +53,23 @@ public class NodeServiceListAdapter extends BaseAdapter {
         TextView text = view.findViewById(R.id.service_name_view);
         text.setText(info.service);
 
-        NodeActionItem[] nodeActions;
+        SendPacketActionItem[] nodeActions;
         Set<String> actions = App.getInstance().getActionsForService(info.service);
         if (actions != null) {
-            nodeActions = new NodeActionItem[actions.size()];
+            nodeActions = new SendPacketActionItem[actions.size()];
             Object[] strings = actions.toArray();
             for (int i = 0; i < nodeActions.length; i++) {
                 String[] parts = ((String) strings[i]).split(("\t"));
-                if (parts.length == 2) {
-                    nodeActions[i] = new NodeActionItem(address, info.service, parts[1], parts[0]);
+                if (parts.length == 0) {
+                    nodeActions[i] = new SendPacketActionItem(address, info.service, "", "");
+                } else  if (parts.length == 2) {
+                    nodeActions[i] = new SendPacketActionItem(address, info.service, parts[1], parts[0]);
                 } else {
-                    nodeActions[i] = new NodeActionItem(address, info.service, parts[0], parts[0]);
+                    nodeActions[i] = new SendPacketActionItem(address, info.service, parts[0], parts[0]);
                 }
             }
         } else {
-            nodeActions = new NodeActionItem[0];
+            nodeActions = new SendPacketActionItem[0];
         }
 
         RecyclerView rv = view.findViewById(R.id.packet_action_list);

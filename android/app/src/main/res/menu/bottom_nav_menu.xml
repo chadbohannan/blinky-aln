@@ -2,6 +2,16 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/navigation_mesh"
+        android:icon="@drawable/home_48px"
+        android:title="@string/title_mesh" />
+
+    <item
+        android:id="@+id/navigation_services"
+        android:icon="@drawable/inbox"
+        android:title="@string/title_services" />
+
+    <item
         android:id="@+id/navigation_wifi"
         android:icon="@drawable/baseline_wifi_24"
         android:title="@string/title_wifi" />
@@ -10,10 +20,5 @@
         android:id="@+id/navigation_bluetooth"
         android:icon="@drawable/baseline_bluetooth_24"
         android:title="@string/title_bluetooth" />
-
-    <item
-        android:id="@+id/navigation_mesh"
-        android:icon="@drawable/baseline_share_24"
-        android:title="@string/title_mesh" />
 
 </menu>

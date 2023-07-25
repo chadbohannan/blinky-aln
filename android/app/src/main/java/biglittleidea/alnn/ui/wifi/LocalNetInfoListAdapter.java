@@ -3,9 +3,6 @@ package biglittleidea.alnn.ui.wifi;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.DialogInterface;
-import android.text.Html;
-import android.text.SpannedString;
-import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +10,7 @@ import android.webkit.WebView;
 import android.widget.BaseAdapter;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -221,7 +219,6 @@ public class LocalNetInfoListAdapter extends BaseAdapter {
                 } else {
                     App.getInstance().setTcpHostPortForInterface(iface, port);
                 }
-
                 dialog.dismiss();
             }
         });
@@ -250,4 +247,4 @@ public class LocalNetInfoListAdapter extends BaseAdapter {
         });
         return dialog;
     }
-}
+};

@@ -154,7 +154,7 @@ class Router(Thread):
             self.send(packet)
 
     def remove_channel(self, channel):
-        print("channel disconnected")
+        print("removing channel")
         with self.lock:
             self.channels.remove(channel)
             delete = [addr for addr in self.remoteNodeMap if self.remoteNodeMap[addr].channel == channel]
@@ -162,9 +162,10 @@ class Router(Thread):
                 del self.remoteNodeMap[addr]
                 for ch in self.channels:
                     ch.send(makeNetworkRouteSharePacket(self.address, addr, 0))
+        # TODO call an on_channel_removed slot method
 
     def add_channel(self, channel):
-        channel.on_close = self.remove_channel
+        channel.on_close(self.remove_channel)
         with self.lock:
             self.channels.append(channel)
             channel.listen(self.selector, self.on_packet)

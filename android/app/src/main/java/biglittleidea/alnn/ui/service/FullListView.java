@@ -1,5 +1,5 @@
 // https://newbedev.com/android-wrap-content-is-not-working-with-listview
-package biglittleidea.alnn.ui.mesh;
+package biglittleidea.alnn.ui.service;
 
 import android.content.Context;
 import android.util.AttributeSet;

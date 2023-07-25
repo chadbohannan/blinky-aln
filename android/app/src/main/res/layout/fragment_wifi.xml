@@ -33,7 +33,7 @@
             android:divider="#f00"
             android:minHeight="50dp"
             android:dividerHeight="1dp"
-            android:listSelector="#0f0"
+            android:listSelector="#aaa"
             />
 
         <TextView android:id="@+id/discovery_label_text"
@@ -51,7 +51,7 @@
             android:divider="#f00"
             android:minHeight="50dp"
             android:dividerHeight="1dp"
-            android:listSelector="#0f0"
+            android:listSelector="#aaa"
             />
 
         <TextView android:id="@+id/connections_label_text"
@@ -87,7 +87,7 @@
             android:divider="#f00"
             android:minHeight="50dp"
             android:dividerHeight="1dp"
-            android:listSelector="#0f0"
+            android:listSelector="#aaa"
             />
     </LinearLayout>
 </ScrollView>

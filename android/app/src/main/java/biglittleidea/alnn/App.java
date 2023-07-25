@@ -49,10 +49,13 @@ import biglittleidea.aln.TlsChannel;
 public class App extends Application {
     private static App instance;
 
+    List<LocalServiceHandler> localServices = new ArrayList<>();
+    public final MutableLiveData<List<LocalServiceHandler>> mldLocalServices = new MutableLiveData<>();
+
     private final MutableLiveData<Boolean> isWifiConnected = new MutableLiveData<>();
     public final MutableLiveData<List<LocalInetInfo>> localInetInfo = new MutableLiveData<>();
     public final MutableLiveData<List<BeaconInfo>> beaconInfo = new MutableLiveData<>();
-    public final MutableLiveData<Map<String, Router.NodeInfoItem>> nodeInfo = new MutableLiveData<>();
+    public final MutableLiveData<Map<String, Router.NodeInfoItem>> mldNodeInfo = new MutableLiveData<>();
 
     public final MutableLiveData<List<String>> activeConnections = new MutableLiveData<>();
     public final MutableLiveData<Set<String>> storedConnections = new MutableLiveData<>();
@@ -76,7 +79,7 @@ public class App extends Application {
 
     // url to channel; not great as it assumes at most one channel to a single url
     HashMap<String, IChannel> channelMap = new HashMap<>();
-    Router alnRouter;
+    public Router alnRouter;
 
     BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -141,10 +144,14 @@ public class App extends Application {
             }
         }, intentFilter);
 
+        // Default local service
+        addLocalService("log");
+
+        mldNodeInfo.setValue(alnRouter.availableServices());
         alnRouter.setOnStateChangedListener(new Router.OnStateChangedListener() {
             @Override
             public void onStateChanged() {
-                nodeInfo.postValue(alnRouter.availableServices());
+                mldNodeInfo.postValue(alnRouter.availableServices());
 
                 // clear closed connections from activeConnections
                 Set<String> removeSet = new HashSet<>();
@@ -160,6 +167,25 @@ public class App extends Application {
                 updateActiveChannels();
             }
         });
+    }
+
+    public void addLocalService(String name) {
+        LocalServiceHandler lsh = new LocalServiceHandler(name);
+        alnRouter.registerService(lsh.service, lsh);
+        localServices.add(lsh);
+        mldLocalServices.setValue(localServices);
+        Map<String, Router.NodeInfoItem> as = alnRouter.availableServices();
+        mldNodeInfo.setValue(as);
+    }
+
+    public void removeLocalService(String name) {
+        alnRouter.unregisterService(name);
+        for (int i = 0; i < localServices.size(); i++) {
+            if (localServices.get(i).service.equals(name)) {
+                localServices.remove(i--); // remove at i; inspect at i again
+            }
+        }
+        mldLocalServices.setValue(localServices);
     }
 
     UDPListener makeListener(InetAddress bcastAddress, short port) {
@@ -316,7 +342,7 @@ public class App extends Application {
         return broadcastUDPThreadMap.containsKey(key);
     }
 
-        @SuppressLint("MissingPermission")
+    @SuppressLint("MissingPermission")
     public String connectTo(BluetoothDevice device, String serviceUuid, boolean enable) {
         String path = String.format("%s:%s", device.getAddress(), serviceUuid);
         if (enable) {
@@ -499,6 +525,42 @@ public class App extends Application {
         storedConnections.postValue(connections);
     }
 
+    public short getUdpAdvertPortForInterface(String iface) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        int port = prefs.getInt("__udp_advert_port_for_"+iface, 8082);
+        return (short)port;
+    }
+
+    public void setUdpAdvertPortForInterface(String iface, short port) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        prefs.edit().putInt("__udp_advert_port_for_"+iface, port).apply();
+        localInetInfo.setValue(localInetInfo.getValue());
+    }
+
+    public short getTcpHostPortForInterface(String iface) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        int port = prefs.getInt("__tcp_host_port_for_"+iface, 8081);
+        return (short)port;
+    }
+
+    public void setTcpHostPortForInterface(String iface, short port) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        prefs.edit().putInt("__tcp_host_port_for_"+iface, port).apply();
+        localInetInfo.setValue(localInetInfo.getValue());
+    }
+
+
+    public boolean getActAsHostForInterface(String iface) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        return prefs.getBoolean("__act_as_host_for_"+iface, false);
+    }
+
+    public void setActAsHostForInterface(String iface, boolean actAsHost) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
+        prefs.edit().putBoolean("__act_as_host_for_"+iface, actAsHost).apply();
+        localInetInfo.setValue(localInetInfo.getValue());
+    }
+
     public void toggleBluetoothDiscovery() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
             return;
@@ -545,39 +607,10 @@ public class App extends Application {
         bluetoothDiscoveryIsActive.setValue(true);
     }
 
-    public short getUdpAdvertPortForInterface(String iface) {
+    public short getNetListenPortForInterface(String iface) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
-        int port = prefs.getInt("__udp_advert_port_for_"+iface, 8082);
+        int port = prefs.getInt("__port_for_"+iface, 8082);
         return (short)port;
     }
 
-    public void setUdpAdvertPortForInterface(String iface, short port) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
-        prefs.edit().putInt("__udp_advert_port_for_"+iface, port).apply();
-        localInetInfo.setValue(localInetInfo.getValue());
-    }
-
-    public short getTcpHostPortForInterface(String iface) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
-        int port = prefs.getInt("__tcp_host_port_for_"+iface, 8081);
-        return (short)port;
-    }
-
-    public void setTcpHostPortForInterface(String iface, short port) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
-        prefs.edit().putInt("__tcp_host_port_for_"+iface, port).apply();
-        localInetInfo.setValue(localInetInfo.getValue());
-    }
-
-
-    public boolean getActAsHostForInterface(String iface) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
-        return prefs.getBoolean("__act_as_host_for_"+iface, false);
-    }
-
-    public void setActAsHostForInterface(String iface, boolean actAsHost) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
-        prefs.edit().putBoolean("__act_as_host_for_"+iface, actAsHost).apply();
-        localInetInfo.setValue(localInetInfo.getValue());
-    }
 }
