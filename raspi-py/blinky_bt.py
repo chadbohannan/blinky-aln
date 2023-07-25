@@ -2,7 +2,7 @@ import bluetooth
 import selectors, signal, socket, time
 from socket import AF_INET, SOCK_DGRAM
 from threading import Lock
-from aln.btchannel import BtChannel
+from aln.bt_channel import BtChannel
 from aln.router import Router
 from aln.packet import Packet
 

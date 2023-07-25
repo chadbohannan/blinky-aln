@@ -42,10 +42,13 @@ import biglittleidea.aln.TlsChannel;
 public class App extends Application {
     private static App instance;
 
+    List<LocalServiceHandler> localServices = new ArrayList<>();
+    public final MutableLiveData<List<LocalServiceHandler>> mldLocalServices = new MutableLiveData<>();
+
     private final MutableLiveData<Boolean> isWifiConnected = new MutableLiveData<>();
     public final MutableLiveData<List<LocalInetInfo>> localInetInfo = new MutableLiveData<>();
     public final MutableLiveData<List<BeaconInfo>> beaconInfo = new MutableLiveData<>();
-    public final MutableLiveData<Map<String, Router.NodeInfoItem>> nodeInfo = new MutableLiveData<>();
+    public final MutableLiveData<Map<String, Router.NodeInfoItem>> mldNodeInfo = new MutableLiveData<>();
     public final MutableLiveData<Set<String>> directConnections = new MutableLiveData<>();
     public final MutableLiveData<Integer> numActiveConnections = new MutableLiveData<>();
     public final MutableLiveData<List<BluetoothDevice>> bluetoothDevices = new MutableLiveData<>();
@@ -60,7 +63,7 @@ public class App extends Application {
     TreeSet<String> connections = new TreeSet();
 
     HashMap<String, IChannel> channelMap = new HashMap<>();
-    Router alnRouter;
+    public Router alnRouter;
 
     BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -117,12 +120,35 @@ public class App extends Application {
             }
         }, intentFilter);
 
+        // Default local service
+        addLocalService("log");
+
+        mldNodeInfo.setValue(alnRouter.availableServices());
         alnRouter.setOnStateChangedListener(new Router.OnStateChangedListener() {
             @Override
             public void onStateChanged() {
-                nodeInfo.postValue(alnRouter.availableServices());
+                mldNodeInfo.postValue(alnRouter.availableServices());
             }
         });
+    }
+
+    public void addLocalService(String name) {
+        LocalServiceHandler lsh = new LocalServiceHandler(name);
+        alnRouter.registerService(lsh.service, lsh);
+        localServices.add(lsh);
+        mldLocalServices.setValue(localServices);
+        Map<String, Router.NodeInfoItem> as = alnRouter.availableServices();
+        mldNodeInfo.setValue(as);
+    }
+
+    public void removeLocalService(String name) {
+        alnRouter.unregisterService(name);
+        for (int i = 0; i < localServices.size(); i++) {
+            if (localServices.get(i).service.equals(name)) {
+                localServices.remove(i--); // remove at i; inspect at i again
+            }
+        }
+        mldLocalServices.setValue(localServices);
     }
 
     UDPListener makeListener(InetAddress bcastAddress, short port) {

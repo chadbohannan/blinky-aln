@@ -17,6 +17,10 @@ import biglittleidea.aln.Router;
 import biglittleidea.alnn.App;
 import biglittleidea.alnn.R;
 
+/**
+ NodeListAdapter is for the vertical list of nodes on the network
+**/
+
 public class NodeListAdapter extends BaseAdapter {
     LayoutInflater inflter;
     List<Router.NodeInfoItem> list = new ArrayList<>();
