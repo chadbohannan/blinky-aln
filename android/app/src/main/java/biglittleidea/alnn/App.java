@@ -1,6 +1,5 @@
 package biglittleidea.alnn;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Application;
 import android.bluetooth.BluetoothAdapter;
@@ -11,7 +10,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
@@ -19,7 +17,6 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
-import androidx.core.app.ActivityCompat;
 import androidx.lifecycle.MutableLiveData;
 
 import java.io.IOException;
@@ -39,6 +36,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 
+import biglittleidea.aln.BleUartChannel;
 import biglittleidea.aln.BluetoothChannel;
 import biglittleidea.aln.IChannel;
 import biglittleidea.aln.Router;
@@ -61,6 +59,10 @@ public class App extends Application {
     public final MutableLiveData<Set<String>> storedConnections = new MutableLiveData<>();
     public final MutableLiveData<Integer> numActiveConnections = new MutableLiveData<>();
     public final MutableLiveData<List<BluetoothDevice>> bluetoothDevices = new MutableLiveData<>();
+
+    public final TreeMap<String, BleUartChannel> addressToBleChannelMap = new TreeMap<>();
+    public final MutableLiveData<TreeMap<String, BleUartChannel>> mldDddressToBleChannelMap = new MutableLiveData<>();
+
     public final MutableLiveData<String> bluetoothDiscoveryStatus = new MutableLiveData<>();
     public final MutableLiveData<Boolean> bluetoothDiscoveryIsActive = new MutableLiveData<>();
 
@@ -188,7 +190,7 @@ public class App extends Application {
         mldLocalServices.setValue(localServices);
     }
 
-    UDPListener makeListener(InetAddress bcastAddress, short port) {
+    UDPListener makeUDPListener(InetAddress bcastAddress, short port) {
         UDPListener listener = new UDPListener(bcastAddress, port);
         listener.setMessageHandler(new UDPListener.MessageHandler() {
             @Override
@@ -222,14 +224,14 @@ public class App extends Application {
             if (bcastListenMap.containsKey(path)) {
                 listener = bcastListenMap.get(path);
             } else {
-                listener = makeListener(bcastAddress, port);
+                listener = makeUDPListener(bcastAddress, port);
                 listener.start();
                 bcastListenMap.put(path, listener);
                 return;
             }
             if (listen && !listener.isRunning()) {
                 Log.d("ALNN", "listening");
-                listener = makeListener(bcastAddress, port);
+                listener = makeUDPListener(bcastAddress, port);
                 listener.start();
                 bcastListenMap.put(path, listener);
             } else if (!listen && listener.isRunning()) {
@@ -343,18 +345,12 @@ public class App extends Application {
     }
 
     @SuppressLint("MissingPermission")
-    public String connectTo(BluetoothDevice device, String serviceUuid, boolean enable) {
-        String path = String.format("%s:%s", device.getAddress(), serviceUuid);
+    public String connectTo(BluetoothDevice device, boolean enable) {
+        String path = String.format("%s:%s", device.getAddress(), device.getName());
         if (enable) {
-            try {
-                BluetoothSocket socket = device.createRfcommSocketToServiceRecord(UUID.fromString(serviceUuid));
-                IChannel channel = new BluetoothChannel(socket);
-                alnRouter.addChannel(channel);
-                channelMap.put(path, channel);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return e.getLocalizedMessage();
-            }
+            IChannel channel = new BleUartChannel(device);
+            alnRouter.addChannel(channel);
+            channelMap.put(path, channel);
         } else if (channelMap.containsKey(path)) {
             channelMap.get(path).close();
             channelMap.remove(path);
@@ -460,7 +456,6 @@ public class App extends Application {
         Set<String> existingCheck = prefs.getStringSet(service, new TreeSet<>());
         Log.d("ALNN", String.format("%d exist", existingCheck.size()));
 
-
         actions.get(service).remove(String.format("%s\t%s", prevTitle, prevContent));
         actions.get(service).add(String.format("%s\t%s", title, content));
 
@@ -561,51 +556,74 @@ public class App extends Application {
         localInetInfo.setValue(localInetInfo.getValue());
     }
 
-    public void toggleBluetoothDiscovery() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        if (bluetoothDiscoveryIsActive.getValue().booleanValue()) {
-            bluetoothAdapter.cancelDiscovery();
-            bluetoothDiscoveryStatus.setValue("discovery canceled");
-            bluetoothDiscoveryIsActive.setValue(false);
-            return;
-        }
-
-        bluetoothDiscoveryStatus.setValue("initializing discovery...");
-        bluetoothDevices.setValue(new ArrayList<>());
-
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothDevice.ACTION_FOUND);
-        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
-        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-        registerReceiver(new BroadcastReceiver() {
-
-            @SuppressLint("MissingPermission")
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                final String action = intent.getAction();
-                List<BluetoothDevice> devices = bluetoothDevices.getValue();
-                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    if (!devices.contains(device)) {
-                        devices.add(device);
-                    }
-                } else if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(intent.getAction())) {
-                    bluetoothDiscoveryStatus.setValue("discovery started");
-                } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(intent.getAction())) {
-                    bluetoothDiscoveryStatus.setValue("discovery finished");
-                    bluetoothDiscoveryIsActive.setValue(false);
-                }
-                String msg = String.format("%d bluetooth devices found", devices.size());
-                bluetoothDiscoveryStatus.setValue(msg);
-                bluetoothDevices.postValue(devices);
+    public boolean addBLEDevice(BluetoothDevice bleDevice) {
+        List<BluetoothDevice> devices = bluetoothDevices.getValue();
+        for(BluetoothDevice bd : devices) {
+            if (bd.getAddress().equals(bleDevice.getAddress())) {
+                return false; // already have this device
             }
-        }, filter);
+        }
+        devices.add(bleDevice);
+        bluetoothDevices.postValue(devices);
 
-        bluetoothAdapter.startDiscovery();
+        String msg = String.format("%d devices discovered", devices.size());
+        bluetoothDiscoveryStatus.postValue(msg);
+        return true;
+    }
+
+    public void startBLEScan() {
         bluetoothDiscoveryIsActive.setValue(true);
     }
+
+    public void stopBLEScan() {
+        bluetoothDiscoveryIsActive.setValue(false);
+    }
+//
+//    public void toggleBluetoothDiscovery() {
+//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+//            return;
+//        }
+//        if (bluetoothDiscoveryIsActive.getValue().booleanValue()) {
+//            bluetoothAdapter.cancelDiscovery();
+//            bluetoothDiscoveryStatus.setValue("discovery canceled");
+//            bluetoothDiscoveryIsActive.setValue(false);
+//            return;
+//        }
+//
+//        bluetoothDiscoveryStatus.setValue("initializing discovery...");
+//        bluetoothDevices.setValue(new ArrayList<>());
+//
+//        IntentFilter filter = new IntentFilter();
+//        filter.addAction(BluetoothDevice.ACTION_FOUND);
+//        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+//        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+//        registerReceiver(new BroadcastReceiver() {
+//
+//            @SuppressLint("MissingPermission")
+//            @Override
+//            public void onReceive(Context context, Intent intent) {
+//                final String action = intent.getAction();
+//                List<BluetoothDevice> devices = bluetoothDevices.getValue();
+//                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+//                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+//                    if (!devices.contains(device)) {
+//                        devices.add(device);
+//                    }
+//                } else if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(intent.getAction())) {
+//                    bluetoothDiscoveryStatus.setValue("discovery started");
+//                } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(intent.getAction())) {
+//                    bluetoothDiscoveryStatus.setValue("discovery finished");
+//                    bluetoothDiscoveryIsActive.setValue(false);
+//                }
+//                String msg = String.format("%d bluetooth devices found", devices.size());
+//                bluetoothDiscoveryStatus.setValue(msg);
+//                bluetoothDevices.postValue(devices);
+//            }
+//        }, filter);
+//
+//        bluetoothAdapter.startDiscovery();
+//        bluetoothDiscoveryIsActive.setValue(true);
+//    }
 
     public short getNetListenPortForInterface(String iface) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getInstance());
