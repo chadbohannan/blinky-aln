@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,9 +64,9 @@ public class BluetoothDiscoveryListAdapter extends BaseAdapter {
     public View getView(int position, View view, ViewGroup parent) {
         view = inflter.inflate(R.layout.bluetooth_discovery_item, null);
 
-        BluetoothService service = deviceList.get(position);
-        String addr = service.device.getAddress();
-        String name = service.device.getName();
+        final BluetoothService service = deviceList.get(position);
+        final String addr = service.device.getAddress();
+        final String name = service.device.getName();
 
         TextView nameText = view.findViewById(R.id.nameText);
         nameText.setText(String.format("%s %s", addr, name));
@@ -81,7 +82,9 @@ public class BluetoothDiscoveryListAdapter extends BaseAdapter {
         view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                App.getInstance().connectTo(service.device, !isConnected);
+//                App.getInstance().connectTo(service.device, !isConnected);
+                Toast.makeText(App.getInstance(), "on click:"+ name, Toast.LENGTH_SHORT).show();
+                App.getInstance().connectTo(service.device, true);
             }
         });
 

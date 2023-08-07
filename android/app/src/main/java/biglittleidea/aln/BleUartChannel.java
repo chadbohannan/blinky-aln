@@ -9,8 +9,11 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.util.Log;
+import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,9 +24,12 @@ public class BleUartChannel implements IChannel {
     IChannelCloseHandler ch = null;
     IPacketHandler ph = null;
 
+    Parser alnPacketParser = null;
+
     boolean mIsConnected = false;
     private BluetoothGatt mGatt;
 
+    List<Packet> packetBuffer = new LinkedList<>();
 
     public static final UUID CCCD = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"); // Client Characteristic Configuration Descriptor
     public static final UUID SERVICE_UUID = UUID.fromString("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
@@ -56,15 +62,28 @@ public class BleUartChannel implements IChannel {
         }
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-            List<BluetoothGattService> services = gatt.getServices();
-            Log.i("ALNN", "onServicesDiscovered, " + services.toString());
             enableTXNotification();
-//            gatt.readCharacteristic(services.get(1).getCharacteristics().get(0));
         }
+
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            Log.i("ALNN", "onCharacteristicRead, " +  characteristic.toString());
-            // TODO parse packets
+            String characteristicUUID = characteristic.getUuid().toString();
+            if (characteristicUUID.equals(TX_CHAR_UUID)) {
+                byte[] data = characteristic.getValue();
+                String msg = String.format("onCharacteristicRead, %s, %s",
+                        characteristic.getUuid().toString(),
+                        new String(data));
+                Log.i("ALNN", msg);
+
+                alnPacketParser.readAx25FrameBytes(data, data.length);
+            }
+        }
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            Log.i("ALNN", String.format("onCharacteristicChanged, %s: %s",
+                    characteristic.getUuid().toString(),
+                    new String(characteristic.getValue())));
         }
     };
 
@@ -72,10 +91,14 @@ public class BleUartChannel implements IChannel {
     {
         BluetoothGattService service = mGatt.getService(SERVICE_UUID);
         if (service == null) {
+            Toast.makeText(App.getInstance(), "null service err", Toast.LENGTH_SHORT).show();
+            Log.i("ALNN", "enableTXNotification: null service err");
             return;
         }
         BluetoothGattCharacteristic txChar = service.getCharacteristic(TX_CHAR_UUID);
         if (txChar == null) {
+            Toast.makeText(App.getInstance(), "null txCharr err", Toast.LENGTH_SHORT).show();
+            Log.i("ALNN", "enableTXNotification: null txCharr err");
             return;
         }
         mGatt.setCharacteristicNotification(txChar,true);
@@ -88,8 +111,12 @@ public class BleUartChannel implements IChannel {
     public void writeRXCharacteristic(byte[] value)
     {
         List<BluetoothGattService> services = mGatt.getServices();
+        if (services == null) {
+            Log.d("ALNN", "writeRXCharacteristic: no ble services discovered");
+            return;
+        }
         for (BluetoothGattService bgs : services) {
-            Log.d("ALNN", "bgs service:"+ bgs.getUuid().toString());
+            Log.d("ALNN", "writeRXCharacteristic: bgs service:"+ bgs.getUuid().toString());
         }
 
         BluetoothGattService RxService = mGatt.getService(SERVICE_UUID);
@@ -123,6 +150,7 @@ public class BleUartChannel implements IChannel {
 
     @Override
     public void receive(IPacketHandler ph, IChannelCloseHandler ch) {
+        this.alnPacketParser = new Parser(ph);
         this.ph = ph;
         this.ch = ch;
     }

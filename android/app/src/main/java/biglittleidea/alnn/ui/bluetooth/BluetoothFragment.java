@@ -170,7 +170,7 @@ public class BluetoothFragment extends Fragment {
                 BluetoothDevice btDevice = result.getDevice();
                 if (app.addBLEDevice(btDevice)) {
                     for (ParcelUuid sid : sids) {
-                        Log.i("ALNN", String.format("address: %s, name:%s, service: %s", btDevice.getAddress(), btDevice.getName(), sid));
+                        Log.i("ALNN", String.format("onScanResult: address: %s, name:%s, service: %s", btDevice.getAddress(), btDevice.getName(), sid));
                     }
                 }
             }
@@ -193,6 +193,7 @@ public class BluetoothFragment extends Fragment {
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            super.onConnectionStateChange(gatt, status, newState);
             Log.i("ALNN", "onConnectionStateChange, " +  "Status: " + status);
             switch (newState) {
                 case BluetoothProfile.STATE_CONNECTED:
@@ -208,6 +209,7 @@ public class BluetoothFragment extends Fragment {
         }
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            super.onServicesDiscovered(gatt, status);
             List<BluetoothGattService> services = gatt.getServices();
             Log.i("ALNN", "onServicesDiscovered, " + services.toString());
             gatt.readCharacteristic(services.get(1).getCharacteristics().get(0));
@@ -215,6 +217,12 @@ public class BluetoothFragment extends Fragment {
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             Log.i("ALNN", "onCharacteristicRead, " +  characteristic.toString());
+        }
+
+        @Override
+        public void onCharacteristicChanged (BluetoothGatt gatt,
+                                             BluetoothGattCharacteristic characteristic) {
+            Log.i("ALNN", "onCharacteristicChanged, " +  new String(characteristic.getValue()));
         }
     };
 }
