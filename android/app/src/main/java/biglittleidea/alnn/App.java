@@ -174,6 +174,7 @@ public class App extends Application {
 
     public void addLocalService(String name) {
         LocalServiceHandler lsh = new LocalServiceHandler(name);
+        lsh.setOnChangedHandler(() -> mldLocalServices.postValue(localServices));
         alnRouter.registerService(lsh.service, lsh);
         localServices.add(lsh);
         mldLocalServices.setValue(localServices);
@@ -353,19 +354,10 @@ public class App extends Application {
         if (enable) {
             bleUartSerial = new BleUartSerial(device);
             bleUartSerial.setOnConnectHandler(isConnected -> {
-//                    IChannel channel = new BleUartChannel(device);
-//                    alnRouter.addChannel(channel);
-//                    channelMap.put(path, channel);
                 Log.i("ALNN", "onConnect:" + isConnected);
-                Packet p = new Packet();
-                p.Net = Packet.NetState.QUERY;
-                bleUartSerial.send(p.toFrameBuffer());
-            });
-            bleUartSerial.setOnDataHandler(new BleUartSerial.OnDataHandler() {
-                @Override
-                public void onData(byte[] data) {
-                    // Log.i("ALNN", "onData:" + new String(data));
-                }
+                IChannel channel = new BleUartChannel(bleUartSerial);
+                alnRouter.addChannel(channel);
+                channelMap.put(path, channel);
             });
             bleUartSerial.connect();
         } else if (channelMap.containsKey(path)) {

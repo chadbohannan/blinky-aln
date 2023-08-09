@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.pm.PackageManager;
+import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -24,6 +25,7 @@ import biglittleidea.alnn.App;
 
 @SuppressLint("MissingPermission")
 public class BleUartSerial {
+    private Handler handler = new Handler();
     boolean mIsConnected = false;
     private BluetoothGatt mGatt;
     private BluetoothDevice bleDevice;
@@ -55,7 +57,7 @@ public class BleUartSerial {
     }
 
     public void connect() {
-        mGatt = bleDevice.connectGatt(App.getInstance().getBaseContext(), false, gattCallback);
+        mGatt = bleDevice.connectGatt(App.getInstance().getBaseContext(), false, gattCallback, BluetoothDevice.TRANSPORT_LE);
     }
 
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
@@ -80,32 +82,41 @@ public class BleUartSerial {
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             enableTXNotification();
-            if (onConnectHandler != null) {
-                onConnectHandler.onConnect(true);
-            }
+            handler.postDelayed(() -> {
+                if (onConnectHandler != null) {
+                    onConnectHandler.onConnect(true);
+                }
+            }, 100);
         }
 
         @Override
-        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) { }
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            StringBuilder sb = new StringBuilder();
+            for (byte b : characteristic.getValue()) {
+                sb.append(String.format("%02X ", b));
+            }
+            Log.i("ALNN", String.format("onCharacteristicRead:%s, status: %b", sb, status));
+        }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-//            Log.i("ALNN", String.format("onCharacteristicChanged, %s: %s",
-//                    characteristic.getUuid().toString(),
-//                    new String(characteristic.getValue())));
-            if (onDataHandler != null) {
-                onDataHandler.onData(characteristic.getValue());
-            }
+            handler.postDelayed(() -> {
+                if (onDataHandler != null) {
+                    onDataHandler.onData(characteristic.getValue());
+                }
+            }, 0);
         }
 
         @Override
         public void onCharacteristicWrite (BluetoothGatt gatt,
                                            BluetoothGattCharacteristic characteristic,
                                            int status) {
-            Log.i("ALNN", String.format("onCharacteristicWrite, %s: %s, status: %d",
-                characteristic.getUuid().toString(),
-                new String(characteristic.getValue()),
-                status));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : characteristic.getValue()) {
+                sb.append(String.format("%02X ", b));
+            }
+            Log.i("ALNN", String.format("onCharacteristicWrite, %s: %s, ok: %b",
+                characteristic.getUuid().toString(), sb, status == BluetoothGatt.GATT_SUCCESS));
         }
     };
 
@@ -155,6 +166,7 @@ public class BleUartSerial {
 
         boolean status = mGatt.writeCharacteristic(rxChar);
         Log.d("ALNN", "write txChar status: " + status);
+        mGatt.readCharacteristic(rxChar);
     }
 
 
@@ -173,5 +185,10 @@ public class BleUartSerial {
 
     public void close() {
         mGatt.close();
+    }
+
+    @Override
+    protected void finalize() {
+        close();
     }
 }

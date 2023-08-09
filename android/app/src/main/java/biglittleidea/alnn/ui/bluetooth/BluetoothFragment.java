@@ -177,7 +177,6 @@ public class BluetoothFragment extends Fragment {
                     }
                 }
             }
-//            connectToDevice(btDevice);
         }
 
         @Override
@@ -193,39 +192,4 @@ public class BluetoothFragment extends Fragment {
         }
     };
 
-    private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
-        @Override
-        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-            super.onConnectionStateChange(gatt, status, newState);
-            Log.i("ALNN", "onConnectionStateChange, " +  "Status: " + status);
-            switch (newState) {
-                case BluetoothProfile.STATE_CONNECTED:
-                    Log.i("ALNN", "gattCallback, STATE_CONNECTED");
-                    gatt.discoverServices();
-                    break;
-                case BluetoothProfile.STATE_DISCONNECTED:
-                    Log.e("ALNN", "gattCallback STATE_DISCONNECTED");
-                    break;
-                default:
-                    Log.e("ALNN", "gattCallback, STATE_OTHER");
-            }
-        }
-        @Override
-        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-            super.onServicesDiscovered(gatt, status);
-            List<BluetoothGattService> services = gatt.getServices();
-            Log.i("ALNN", "onServicesDiscovered, " + services.toString());
-            gatt.readCharacteristic(services.get(1).getCharacteristics().get(0));
-        }
-        @Override
-        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            Log.i("ALNN", "onCharacteristicRead, " +  characteristic.toString());
-        }
-
-        @Override
-        public void onCharacteristicChanged (BluetoothGatt gatt,
-                                             BluetoothGattCharacteristic characteristic) {
-            Log.i("ALNN", "onCharacteristicChanged, " +  new String(characteristic.getValue()));
-        }
-    };
 }
