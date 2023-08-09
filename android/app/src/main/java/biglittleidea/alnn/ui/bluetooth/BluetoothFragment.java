@@ -39,6 +39,7 @@ import androidx.fragment.app.Fragment;
 import java.util.ArrayList;
 import java.util.List;
 
+import biglittleidea.aln.BleUartSerial;
 import biglittleidea.alnn.App;
 import biglittleidea.alnn.databinding.FragmentBluetoothBinding;
 @SuppressLint("MissingPermission")
@@ -133,7 +134,9 @@ public class BluetoothFragment extends Fragment {
             settings = new ScanSettings.Builder()
                     .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
                     .build();
-            filters = new ArrayList<ScanFilter>();
+            filters = new ArrayList<>();
+            ParcelUuid uuid = ParcelUuid.fromString(BleUartSerial.SERVICE_UUID.toString());
+            filters.add(new ScanFilter.Builder().setServiceUuid(uuid).build());
             scanLeDevice(true);
         }
     }

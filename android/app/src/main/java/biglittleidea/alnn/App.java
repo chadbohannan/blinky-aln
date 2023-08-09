@@ -37,6 +37,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 
 import biglittleidea.aln.BleUartChannel;
+import biglittleidea.aln.BleUartSerial;
 import biglittleidea.aln.BluetoothChannel;
 import biglittleidea.aln.IChannel;
 import biglittleidea.aln.Router;
@@ -344,13 +345,29 @@ public class App extends Application {
         return broadcastUDPThreadMap.containsKey(key);
     }
 
+
+    BleUartSerial bleUartSerial;
     @SuppressLint("MissingPermission")
     public String connectTo(BluetoothDevice device, boolean enable) {
         String path = String.format("%s:%s", device.getAddress(), device.getName());
         if (enable) {
-            IChannel channel = new BleUartChannel(device);
-            alnRouter.addChannel(channel);
-            channelMap.put(path, channel);
+            bleUartSerial = new BleUartSerial(device);
+            bleUartSerial.setOnConnectHandler(isConnected -> {
+//                    IChannel channel = new BleUartChannel(device);
+//                    alnRouter.addChannel(channel);
+//                    channelMap.put(path, channel);
+                Log.i("ALNN", "onConnect:" + isConnected);
+                Packet p = new Packet();
+                p.Net = Packet.NetState.QUERY;
+                bleUartSerial.send(p.toFrameBuffer());
+            });
+            bleUartSerial.setOnDataHandler(new BleUartSerial.OnDataHandler() {
+                @Override
+                public void onData(byte[] data) {
+                    // Log.i("ALNN", "onData:" + new String(data));
+                }
+            });
+            bleUartSerial.connect();
         } else if (channelMap.containsKey(path)) {
             channelMap.get(path).close();
             channelMap.remove(path);
