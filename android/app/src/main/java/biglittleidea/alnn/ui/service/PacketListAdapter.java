@@ -57,6 +57,9 @@ public class PacketListAdapter extends BaseAdapter {
         String metaData = String.format("  (%d bytes)", info.second.Data.length);
         dateText.setText(info.first.toString() + metaData);
 
+        TextView srcText = view.findViewById(R.id.srcText);
+        srcText.setText(info.second.SourceAddress);
+
         String content;
         if (type.equals(TextType)) {
             content = new String(info.second.Data, StandardCharsets.UTF_8);
