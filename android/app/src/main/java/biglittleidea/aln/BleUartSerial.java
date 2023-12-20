@@ -64,19 +64,19 @@ public class BleUartSerial {
 
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-            Log.i("ALNN", "onConnectionStateChange, " +  "Status: " + status);
             switch (newState) {
                 case BluetoothProfile.STATE_CONNECTED:
-                    Log.i("ALNN", "gattCallback, STATE_CONNECTED");
                     gatt.discoverServices();
                     mIsConnected = true;
                     break;
                 case BluetoothProfile.STATE_DISCONNECTED:
-                    Log.e("ALNN", "gattCallback STATE_DISCONNECTED");
+                    handler.postDelayed(() -> {
+                        if (onConnectHandler != null) {
+                            onConnectHandler.onConnect(false);
+                        }
+                    }, 0);
                     mIsConnected = false;
                     break;
-                default:
-                    Log.e("ALNN", "gattCallback, STATE_OTHER");
             }
         }
         @Override
@@ -90,33 +90,12 @@ public class BleUartSerial {
         }
 
         @Override
-        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            StringBuilder sb = new StringBuilder();
-            for (byte b : characteristic.getValue()) {
-                sb.append(String.format("%02X ", b));
-            }
-            Log.i("ALNN", String.format("onCharacteristicRead:%s, status: %b", sb, status));
-        }
-
-        @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             handler.postDelayed(() -> {
                 if (onDataHandler != null) {
                     onDataHandler.onData(characteristic.getValue());
                 }
             }, 0);
-        }
-
-        @Override
-        public void onCharacteristicWrite (BluetoothGatt gatt,
-                                           BluetoothGattCharacteristic characteristic,
-                                           int status) {
-            StringBuilder sb = new StringBuilder();
-            for (byte b : characteristic.getValue()) {
-                sb.append(String.format("%02X ", b));
-            }
-            Log.i("ALNN", String.format("onCharacteristicWrite, %s: %s, ok: %b",
-                characteristic.getUuid().toString(), sb, status == BluetoothGatt.GATT_SUCCESS));
         }
     };
 
@@ -141,17 +120,12 @@ public class BleUartSerial {
         mGatt.writeDescriptor(descriptor);
     }
 
-    public void writeRXCharacteristic(byte[] value)
-    {
+    public void writeRXCharacteristic(byte[] value) {
         List<BluetoothGattService> services = mGatt.getServices();
         if (services == null) {
             Log.d("ALNN", "writeRXCharacteristic: no ble services discovered");
             return;
         }
-//        for (BluetoothGattService bgs : services) {
-//            Log.i("ALNN", "writeRXCharacteristic: bgs service:"+ bgs.getUuid().toString());
-//        }
-
         BluetoothGattService rxService = mGatt.getService(SERVICE_UUID);
         if (rxService == null) {
             return;
@@ -163,12 +137,8 @@ public class BleUartSerial {
 
         rxChar.setValue(value);
         rxChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-
-        boolean status = mGatt.writeCharacteristic(rxChar);
-        Log.d("ALNN", "write txChar status: " + status);
-        mGatt.readCharacteristic(rxChar);
+        mGatt.writeCharacteristic(rxChar);
     }
-
 
     public void send(byte[] frame) {
         int BLE_FRAME_SZ = 20;

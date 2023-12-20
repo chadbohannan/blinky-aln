@@ -347,6 +347,7 @@ public class App extends Application {
     }
 
 
+
     BleUartSerial bleUartSerial;
     @SuppressLint("MissingPermission")
     public String connectTo(BluetoothDevice device, boolean enable) {
@@ -358,6 +359,7 @@ public class App extends Application {
                 IChannel channel = new BleUartChannel(bleUartSerial);
                 alnRouter.addChannel(channel);
                 channelMap.put(path, channel);
+                bluetoothDevices.postValue(bluetoothDevices.getValue());
             });
             bleUartSerial.connect();
         } else if (channelMap.containsKey(path)) {
@@ -368,9 +370,9 @@ public class App extends Application {
         bluetoothDevices.postValue(bluetoothDevices.getValue()); // trigger redraw
         return null;
     }
-
-    public boolean isConnected(BluetoothDevice device, String serviceUuid) {
-        String path = String.format("%s:%s", device.getAddress(), serviceUuid);
+    @SuppressLint("MissingPermission")
+    public boolean isConnected(BluetoothDevice device) {
+        String path = String.format("%s:%s", device.getAddress(), device.getName());
         synchronized (channelMap) {
             return channelMap.containsKey(path);
         }

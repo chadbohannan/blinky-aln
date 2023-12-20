@@ -71,7 +71,7 @@ public class BluetoothDiscoveryListAdapter extends BaseAdapter {
         TextView nameText = view.findViewById(R.id.nameText);
         nameText.setText(String.format("%s %s", addr, name));
 
-        final boolean isConnected = App.getInstance().isConnected(service.device, service.uuid);
+        final boolean isConnected = App.getInstance().isConnected(service.device);
         if (isConnected) {
             view.findViewById(R.id.icon_black).setVisibility(View.VISIBLE);
             view.findViewById(R.id.icon_grey).setVisibility(View.INVISIBLE);
@@ -79,13 +79,9 @@ public class BluetoothDiscoveryListAdapter extends BaseAdapter {
             view.findViewById(R.id.icon_black).setVisibility(View.INVISIBLE);
             view.findViewById(R.id.icon_grey).setVisibility(View.VISIBLE);
         }
-        view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-//                App.getInstance().connectTo(service.device, !isConnected);
-                Toast.makeText(App.getInstance(), "on click:"+ name, Toast.LENGTH_SHORT).show();
-                App.getInstance().connectTo(service.device, true);
-            }
+        view.setOnClickListener(v -> {
+            Toast.makeText(App.getInstance(), "on click:"+ name, Toast.LENGTH_SHORT).show();
+            App.getInstance().connectTo(service.device, !isConnected);
         });
 
         return view;

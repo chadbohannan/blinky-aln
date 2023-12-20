@@ -47,6 +47,11 @@ public class BleUartChannel implements IChannel {
                 alnPacketParser.readAx25FrameBytes(data, data.length);
             }
         });
+        bleDevice.setOnConnectHandler(isConnected -> {
+            if (!isConnected) {
+                close();
+            }
+        });
     }
 
     @Override
