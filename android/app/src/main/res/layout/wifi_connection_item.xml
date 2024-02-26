@@ -10,58 +10,49 @@
         android:id="@+id/icon"
         android:layout_width="50dp"
         android:layout_height="50dp"
+        android:layout_margin="4dp"
         android:src="@mipmap/ic_launcher"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent" />
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:padding="@dimen/activity_horizontal_margin"
-        android:textColor="@color/black"
-        android:textSize="8pt"
-        android:text="TEXT"
-        app:layout_constraintLeft_toRightOf="@id/icon"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
-
-
-
-    <androidx.appcompat.widget.LinearLayoutCompat
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:gravity="end"
-        android:layout_marginRight="10dp"
+        android:padding="2dp"
+        app:layout_constraintLeft_toRightOf="@id/icon"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <TextView
-            android:id="@+id/portView"
+            android:id="@+id/addressTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingLeft="20dp"
-            android:paddingRight="20dp"
-            android:background="@drawable/custom_border"
+            android:layout_margin="2dp"
             android:textColor="@color/black"
             android:textSize="8pt"
-            android:text="PORT"
-            app:layout_constraintLeft_toRightOf="@id/textView"
-            app:layout_constraintTop_toTopOf="@id/textView" />
+            android:text="BEACON ADDRESS"
+            android:ellipsize="end" />
 
-        <Switch
-            android:id="@+id/listen_switch"
+    </LinearLayout>
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <Button
+            android:id="@+id/disconnect_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="8pt"
-            android:padding="8dp"
-            android:switchMinWidth="76dp"
+            android:layout_gravity="center"
             android:textColor="@color/black"
-            android:text="Listen" />
+            android:text="disconnect"
+            android:textSize="8pt" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 

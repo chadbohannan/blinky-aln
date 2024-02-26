@@ -4,6 +4,8 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -13,15 +15,29 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
+import com.journeyapps.barcodescanner.ScanContract;
 import biglittleidea.alnn.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        App.getInstance().fragmentLauncher = registerForActivityResult(
+                new ScanContract(),
+                result -> {
+                    if(result.getContents() == null) {
+                        Toast.makeText(this, "Scan Cancelled", Toast.LENGTH_LONG).show();
+                    } else {
+                        App.getInstance().qrScanResult.postValue(result.getContents());
+                        Toast.makeText(this, "Scanned: " + result.getContents(), Toast.LENGTH_LONG).show();
+                    }
+                });
+
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -57,19 +73,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 0) {
-            if (resultCode == RESULT_OK) {
-                App.getInstance().qrScanResult.postValue(data.getStringExtra("SCAN_RESULT"));
-            }
-            if(resultCode == RESULT_CANCELED){
-                //handle cancel
-            }
-        }
     }
 
     @Override

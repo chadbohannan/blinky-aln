@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -64,6 +65,16 @@ public class Router {
      String address = "";
     ArrayList<IChannel> channels = new ArrayList<>();
 
+    public Set<IChannel> getChannelSet() {
+        HashSet<IChannel> channelSet = new HashSet<>();
+        synchronized (this) {
+            for (int i = 0; i < channels.size(); i++) {
+                channelSet.add(channels.get(i));
+            }
+        }
+        return channelSet;
+    }
+
     public String getAddress() {
         return this.address;
     }
@@ -98,6 +109,22 @@ public class Router {
         return remoteAddress;
     }
 
+    ArrayList<String> serviceAddresses(String service) {
+        ArrayList<String> addressList = new ArrayList<>();
+        synchronized(this) {
+            if (serviceHandlerMap.containsKey(service))
+                addressList.add(this.address);
+
+            if (serviceCapacityMap.containsKey(service)) {
+                HashMap<String, NodeCapacity> addressToLoadMap = serviceCapacityMap.get(service);
+                for (String address : addressToLoadMap.keySet()) {
+                    addressList.add(address);
+                }
+            }
+        }
+        return addressList;
+    }
+
     // TODO java is supposed to throw exceptions, not return error strings
     public String send(Packet p) {
         synchronized (this) {
@@ -106,7 +133,17 @@ public class Router {
             }
             if ((p.DestAddress == null || p.DestAddress.length() == 0) &&
                     (p.Service != null && p.Service.length() > 0)) {
-                p.DestAddress = selectService(p.Service);
+                ArrayList<String> addresses = this.serviceAddresses(p.Service);
+                if (addresses.size() > 0) {
+                    for (int i = 1; i < addresses.size(); i++) {
+                        Packet pc = p.copy();
+                        pc.DestAddress = addresses.get(i);
+                        this.send(pc);
+                    }
+                    p.DestAddress = addresses.get(0);
+                } else {
+                    return String.format("no services of type %s yet discovered on the network", p.Service);
+                }
             }
         }
 
@@ -303,6 +340,9 @@ public class Router {
                 if (serviceInfo.err != null) {
                     Log.d("ALNN", String.format("error parsing net service: %s\n", serviceInfo.err));
                     return;
+                }
+                if (serviceInfo.address == this.address) {
+                    break;
                 }
                 synchronized (this) {
                     NodeCapacity nodeCapacity = new NodeCapacity();

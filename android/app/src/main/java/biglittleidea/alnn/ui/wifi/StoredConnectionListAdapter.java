@@ -5,8 +5,6 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Color;
-import android.media.Image;
 import android.net.Uri;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -20,24 +18,27 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.Observer;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.journeyapps.barcodescanner.ScanOptions;
 
 import biglittleidea.alnn.App;
 import biglittleidea.alnn.R;
 
-public class DirectConnectionListAdapter extends BaseAdapter {
+public class StoredConnectionListAdapter extends BaseAdapter {
 
     LayoutInflater inflter;
     Activity activity;
-    DirectConnectionItem[] connectionList;
+    StoredConnectionItem[] connectionList;
     LifecycleOwner lifecycleOwner;
 
     Dialog dialog;
 
-    public DirectConnectionListAdapter(Activity activity, DirectConnectionItem[] connectionList, LifecycleOwner lifecycleOwner) {
+
+    public StoredConnectionListAdapter(Activity activity, StoredConnectionItem[] connectionList, LifecycleOwner lifecycleOwner) {
         inflter = (LayoutInflater.from(activity));
         this.activity = activity;
         this.connectionList = connectionList;
@@ -70,7 +71,7 @@ public class DirectConnectionListAdapter extends BaseAdapter {
         Switch connectSwitch = view.findViewById(R.id.connect_switch);
 
         if (position < connectionList.length) {
-            final DirectConnectionItem item = connectionList[position];
+            final StoredConnectionItem item = connectionList[position];
             icon.setImageResource(R.drawable.server_host);
 
             connectSwitch.setVisibility(View.VISIBLE);
@@ -119,13 +120,13 @@ public class DirectConnectionListAdapter extends BaseAdapter {
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                App.getInstance().removeDirectConnection(content);
+                                App.getInstance().forgetConnection(content);
                             }
                         }).show();
             });
         } else {
             titleText.setText("");
-            protocolText.setText("Add New Remote Connection");
+            protocolText.setText("New Connection");
             addressText.setText("");
             icon.setImageResource(R.drawable.icons8_plus);
             connectSwitch.setVisibility(View.INVISIBLE);
@@ -174,15 +175,8 @@ public class DirectConnectionListAdapter extends BaseAdapter {
             public void onClick(View v) {
                 EditText labelEdit =  view.findViewById(R.id.titleEdit);
                 App.getInstance().qrDialogLabel.postValue(labelEdit.getText().toString());
-                try {
-                    Intent intent = new Intent("com.google.zxing.client.android.SCAN");
-                    intent.putExtra("SCAN_MODE", "QR_CODE_MODE"); // "PRODUCT_MODE for bar codes
-                    activity.startActivityForResult(intent, 0);
-                } catch (Exception e) {
-                    Uri marketUri = Uri.parse("market://details?id=com.google.zxing.client.android");
-                    Intent marketIntent = new Intent(Intent.ACTION_VIEW,marketUri);
-                    activity.startActivity(marketIntent);
-                }
+                App.getInstance().fragmentLauncher.launch(new ScanOptions());
+                Toast.makeText(app, "failed start QR capture", Toast.LENGTH_SHORT).show();
             }
         });
         view.findViewById(R.id.cancel_button).setOnClickListener(new View.OnClickListener() {
@@ -200,7 +194,7 @@ public class DirectConnectionListAdapter extends BaseAdapter {
                 String title = titleEdit.getText().toString();
                 String content = contentEdit.getText().toString();
 
-                App.getInstance().saveDirectConnection(title, content);
+                App.getInstance().saveConnection(title, content);
                 titleEdit.setText("");
                 contentEdit.setText("");
 
