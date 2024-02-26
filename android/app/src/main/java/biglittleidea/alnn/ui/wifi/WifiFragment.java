@@ -1,20 +1,29 @@
 package biglittleidea.alnn.ui.wifi;
 
+import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
 
+import com.google.zxing.client.android.Intents;
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanOptions;
+
 import java.util.Set;
 
 import biglittleidea.alnn.App;
+import biglittleidea.alnn.MainActivity;
 import biglittleidea.alnn.databinding.FragmentWifiBinding;
 
 public class WifiFragment extends Fragment {

@@ -35,7 +35,7 @@ public class LocalServiceHandler implements IPacketHandler {
         packets.addFirst(new Pair<>(new Date(), p));
         if (packets.size() > 5)
             packets.removeLast();
-        mdlPackets.setValue(packets);
+        mdlPackets.postValue(packets);
         if(this.onChangedHandler != null)
             this.onChangedHandler.changed();
     }

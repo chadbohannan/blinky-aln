@@ -17,7 +17,10 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.lifecycle.MutableLiveData;
+
+import com.journeyapps.barcodescanner.ScanOptions;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -47,6 +50,7 @@ import biglittleidea.aln.TlsChannel;
 
 public class App extends Application {
     private static App instance;
+    public ActivityResultLauncher<ScanOptions> fragmentLauncher;
 
     List<LocalServiceHandler> localServices = new ArrayList<>();
     public final MutableLiveData<List<LocalServiceHandler>> mldLocalServices = new MutableLiveData<>();
@@ -388,8 +392,8 @@ public class App extends Application {
                     case "tcp+aln":
                         channel = new TcpChannel(host, port);
                         break;
-                    case "tcp+maln":
 
+                    case "tcp+maln":
                         channel = new TcpChannel(host, port);
                         p = new Packet();
                         p.DestAddress = node;

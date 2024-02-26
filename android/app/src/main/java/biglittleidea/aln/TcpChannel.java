@@ -23,6 +23,7 @@ public class TcpChannel implements IChannel {
     SocketChannel socket;
     BlockingQueue<Packet> sendQueue = new LinkedBlockingQueue<Packet>(10);
     Thread sendThread = null;
+    Thread receiveThread = null;
 
     // TODO onCloseHandler to notify UI when channel closes?
     IChannelCloseHandler closeHandler = null;
@@ -43,19 +44,28 @@ public class TcpChannel implements IChannel {
 
     public TcpChannel(String host, int port) {
         try {
-            InetSocketAddress hostAddress = new InetSocketAddress(host, port);
-            socket = SocketChannel.open();
-            sendThread = new Thread(() -> {
+            receiveThread = new Thread(() -> {
+
                 try {
-                    socket.connect(hostAddress); // block until connection is made
+                    socket = SocketChannel.open();
                 } catch (IOException e) {
-                    e.printStackTrace();
-                    return;
+                    throw new RuntimeException(e);
                 }
-                sendLoop();
-                triggerOnCloseHandler();
+                sendThread = new Thread(() -> {
+                    try {
+                        InetSocketAddress hostAddress = new InetSocketAddress(host, port);
+                        socket.connect(hostAddress); // block until connection is made
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return;
+                    }
+                    sendLoop();
+                    triggerOnCloseHandler();
+
+                });
+                sendThread.start();
             });
-            sendThread.start();
+            receiveThread.start();
         } catch (Exception e) {
             Log.d("ALNN", String.format("TcpChannel(): %s", e.getLocalizedMessage()));
         }
@@ -86,41 +96,61 @@ public class TcpChannel implements IChannel {
         sendQueue.offer(p);
     }
 
+    private boolean readSocket(SocketChannel socket, Parser parser) {
+        ByteBuffer[] buffer = new ByteBuffer[]{ByteBuffer.allocate(1)};
+        try {
+            long n = socket.read(buffer, 0, 1);
+            if (n == 0) {
+                return true;
+            }
+            if (n < 0) {
+                Thread.sleep(10);
+            } else {
+                parser.readAx25FrameBytes(buffer[0].array(), (int) n);
+                buffer[0].flip();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return true;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return true;
+        }
+        return false;
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.O)
     public void receive(IPacketHandler packetHandler, IChannelCloseHandler closeHandler) {
         this.closeHandler = closeHandler;
         Parser parser = new Parser(packetHandler);
-        if (socket != null && socket.isOpen()) {
-            Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    while(socket.isOpen()) {
-                        if (!socket.isConnected()) {
-                            try {
-                                Thread.sleep(100);
-                            } catch (InterruptedException e) {
-                                break;
-                            }
-                            continue;
-                        }
-                        ByteBuffer[] buffer = new ByteBuffer[]{ByteBuffer.allocate(1)};
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // wait for init thread to connect
+                for (int i = 0; i < 5; i++) {
+                    if (socket == null || !socket.isOpen()) {
                         try {
-                            long n = socket.read(buffer, 0, 1);
-                            if (n == 0) {
-                                break;
-                            }
-                            parser.readAx25FrameBytes(buffer[0].array(), (int)n);
-                            buffer[0].flip();
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                            Thread.sleep(300);
+                        } catch (InterruptedException e) {
                             break;
                         }
                     }
-                    triggerOnCloseHandler();
                 }
-            });
-            t.start();
-        }
+                while(socket != null && socket.isOpen()) {
+                    if (!socket.isConnected()) {
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            break;
+                        }
+                        continue;
+                    }
+                    if (readSocket(socket, parser))
+                        break;
+                }
+                triggerOnCloseHandler();
+            }
+        }).start();
     }
 
     public void close() {

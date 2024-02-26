@@ -18,10 +18,12 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.Observer;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.journeyapps.barcodescanner.ScanOptions;
 
 import biglittleidea.alnn.App;
 import biglittleidea.alnn.R;
@@ -34,6 +36,7 @@ public class StoredConnectionListAdapter extends BaseAdapter {
     LifecycleOwner lifecycleOwner;
 
     Dialog dialog;
+
 
     public StoredConnectionListAdapter(Activity activity, StoredConnectionItem[] connectionList, LifecycleOwner lifecycleOwner) {
         inflter = (LayoutInflater.from(activity));
@@ -172,22 +175,7 @@ public class StoredConnectionListAdapter extends BaseAdapter {
             public void onClick(View v) {
                 EditText labelEdit =  view.findViewById(R.id.titleEdit);
                 App.getInstance().qrDialogLabel.postValue(labelEdit.getText().toString());
-                try {
-                    Intent intent = new Intent("com.google.zxing.client.android.SCAN");
-                    intent.putExtra("SCAN_MODE", "QR_CODE_MODE"); // "PRODUCT_MODE for bar codes
-                    activity.startActivityForResult(intent, 0);
-                    return;
-                } catch (Exception e) {
-                    Log.d("ALNN", "failed launch barcode scanner");
-                }
-                try {
-                    Uri marketUri = Uri.parse("market://details?id=com.google.zxing.client.android");
-                    Intent marketIntent = new Intent(Intent.ACTION_VIEW, marketUri);
-                    activity.startActivity(marketIntent);
-                    return;
-                } catch (Exception e) {
-                    Log.d("ALNN", "failed launch play market uri");
-                }
+                App.getInstance().fragmentLauncher.launch(new ScanOptions());
                 Toast.makeText(app, "failed start QR capture", Toast.LENGTH_SHORT).show();
             }
         });
